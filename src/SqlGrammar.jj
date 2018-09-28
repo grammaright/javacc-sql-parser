@@ -30,16 +30,19 @@ class Formula {
 
 class NoTableFoundException extends Exception {
   // TODO:
-}PARSER_END(SqlGrammar)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN : /* OPERATORS */{
+}PARSER_END(SqlGrammar)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN [IGNORE_CASE] : /* OPERATORS */{
   < SELECT : "SELECT" > | < FROM : "FROM" >
-| < WHERE : "WHERE" >}TOKEN :{
+| < WHERE : "WHERE" >
+| < AND : "AND" > }TOKEN :	// operator{
   < ASTERISK : "*" >
 | < EQUAL : ("==" | "=") >
 | < GT : ">" >
 | < LT : "<" >
-| < AND : "AND" >
+}
 
-| < STRING : (("\'" < WORD > "\'") | ("\"" < WORD > "\"")) >
+TOKEN :		// input tokens
+{
+  < STRING : (("\'" < WORD > "\'") | ("\"" < WORD > "\"")) >
 | < WORD : (< ALPHABET >)+ >
 | < ALPHABET : ([ "a"-"z" ] | ["A"-"Z"]) >
 | < INT_VALUE : (< DIGIT >)+ >
@@ -62,7 +65,7 @@ class NoTableFoundException extends Exception {
 )
 {
   // For Debug
-  if (true) { 
+  if (false) { 
     System.out.println("\n\n[INFO] select caluse");
     for (int i = 0; i < projection.size(); i++) {
       System.out.println("[INFO] " + projection.get(i));
@@ -104,7 +107,10 @@ class NoTableFoundException extends Exception {
     for (int i = 0; i < where_list.size(); i++) {
       Formula item = where_list.get(i);
       boolean isMatching = false;
-      if (item.lvalue.table != null) {
+      if (item.lvalue.table == null) {
+        // e.g. 20 < s.age is not valid 
+        throw new ParseException();
+      } else {
         // lvalue
         for (int j = 0; j < tables.size(); j++) {
           if (item.lvalue.table.equals(tables.get(j))) {
