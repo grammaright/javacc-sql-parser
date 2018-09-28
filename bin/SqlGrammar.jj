@@ -1,261 +1,0 @@
-/**
- * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
- */options{  static = true;}PARSER_BEGIN(SqlGrammar)
-import java.util.ArrayList;
-
-public class SqlGrammar{  public static void main(String args []) throws ParseException  {    SqlGrammar parser = new SqlGrammar(System.in);    while (true)    {      System.out.println("Reading from standard input...");      try      {        switch (SqlGrammar.one_line())        {          case 0 :           System.out.println("OK.");          break;          case 1 :           System.out.println("Goodbye.");          break;          default :           break;        }      }      catch (Exception e)      {        System.out.println("NOK.");
-        e.printStackTrace(System.out);//        System.out.println(e.getMessage());
-        SqlGrammar.ReInit(System.in);      }      catch (Error e)      {        System.out.println("Oops.");//        System.out.println(e.getMessage());
-        e.printStackTrace(System.out);
-        break;      }    }  }}
-
-class Attributer {
-  public String table = null;
-  public String attribute = null;
-
-  public String toString() {
-    return table + "." + attribute;
-  }
-}
-
-class Formula {
-  public Attributer lvalue = null;
-  public String operend = null;
-  public Attributer rvalue = null;
-
-  public String toString() {
-    return lvalue.toString() + " " + operend + " " + rvalue.toString();
-  }
-}
-
-class NoTableFoundException extends Exception {
-  // TODO:
-}PARSER_END(SqlGrammar)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN : /* OPERATORS */{
-  < SELECT : "SELECT" > | < FROM : "FROM" >
-| < WHERE : "WHERE" >}TOKEN :{
-  < ASTERISK : "*" >
-| < EQUAL : ("==" | "=") >
-| < GT : ">" >
-| < LT : "<" >
-| < AND : "AND" >
-
-| < STRING : (("\'" < WORD > "\'") | ("\"" < WORD > "\"")) >
-| < WORD : (< ALPHABET >)+ >
-| < ALPHABET : ([ "a"-"z" ] | ["A"-"Z"]) >
-| < INT_VALUE : (< DIGIT >)+ >
-| < DIGIT : [ "0"-"9" ] >}int one_line() :{}{  sql_clause() ";"  {    return 0;  }| ";"  {    return 1;  }}void sql_clause() :{
-  ArrayList<Attributer> projection = null;
-  ArrayList<String> tables = null;
-  ArrayList<Formula> where_list = null;
-}{
-(
-  (    < SELECT >
-    projection = select_clause()
-  )
-  (	< FROM >
-	tables = from_clause()
-  )
-  (
-    < WHERE >
-    where_list = where_clause()
-  )?
-)
-{
-  // For Debug
-  if (true) { 
-    System.out.println("\n\n[INFO] select caluse");
-    for (int i = 0; i < projection.size(); i++) {
-      System.out.println("[INFO] " + projection.get(i));
-    }
-    System.out.println("\n[INFO] from clause");
-    for (int i = 0; i < tables.size(); i++) {
-      System.out.println("[INFO] " + tables.get(i));
-    }
-    if (where_list != null) {
-      System.out.println("\n[INFO] where clause");
-      for (int i = 0; i < where_list.size(); i++) {
-        System.out.println("[INFO] " + where_list.get(i));
-      }
-    }
-  }
-  
-  // temporal exception for NoTableFounded
-  for (int i = 0; i < projection.size(); i++) {
-    Attributer item = projection.get(i);
-    if (item.table == null) {
-      continue;
-    }
-    
-    boolean isMatching = false;
-    for (int j = 0; j < tables.size(); j++) {
-      if (item.table.equals(tables.get(j))) {
-        isMatching = true;
-        break;
-      }
-    }
-
-    if (isMatching == false) {
-      throw new ParseException();
-    }
-  }
-
-  // where
-  if (where_list != null) {
-    for (int i = 0; i < where_list.size(); i++) {
-      Formula item = where_list.get(i);
-      boolean isMatching = false;
-      if (item.lvalue.table != null) {
-        // lvalue
-        for (int j = 0; j < tables.size(); j++) {
-          if (item.lvalue.table.equals(tables.get(j))) {
-            isMatching = true;
-            break;
-          }
-        }
-        if (isMatching == false) {
-          throw new ParseException();
-        }
-      }
-
-      isMatching = false;
-      if (item.rvalue.table != null) {
-        // rvalue
-        for (int j = 0; j < tables.size(); j++) {
-          if (item.rvalue.table.equals(tables.get(j))) {
-            isMatching = true;
-            break;
-          }
-        }
-        if (isMatching == false) {
-          throw new ParseException();
-        } 
-      }    
-    }
-  }
-}
-}
-
-ArrayList<Attributer> select_clause() :
-{
-  Token token1 = null, token2 = null;
-  ArrayList<Attributer> tables = new ArrayList();
-  Attributer temp = null;
-}
-{
-  // TODO: 이게 여기서만 쓰여야 하는
-  (
-    (
-      token1 = < ASTERISK >
-      {
-        Attributer asterisk = new Attributer();
-        asterisk.attribute = "*";
-        tables.add(asterisk);
-    }
-    )
-  | (
-      temp = attribute()
-      {
-        tables.add(temp);
-      }
-      (
-        (          ","
-        )
-        (
-          temp = attribute()
-          {
-            tables.add(temp);
-          }
-        )
-      )*
-    )
-  )
-  {    return tables;
-  }}
-
-ArrayList<String> from_clause() :
-{
-  Token table1 = null, table2 = null;
-  ArrayList<String> tables = new ArrayList();
-}
-{  table1 = < WORD >
-  (    ","
-    table2 = < WORD >
-  )?
-  {
-    tables.add(table1.toString());
-    if (table2 != null) {
-      tables.add(table2.toString());
-    }
-	return tables;
-  }
-}
-
-ArrayList<Formula> where_clause() :
-{
-  Formula result = null;
-  ArrayList<Formula> formulas = new ArrayList();
-}
-{
-  result = formula()
-  {
-	formulas.add(result);
-  }
-  (
-    < AND >
-    result = formula()
-    {
-      formulas.add(result);
-    }
-  )?
-
-  {
-    return formulas;
-  }
-}
-
-Attributer attribute() :
-{
-  Attributer value = new Attributer();
-  Token temp;
-}
-{  (    temp = < WORD >
-    {
-      value.table = temp.toString();
-    }
-    "."
-  )?
-  (
-    temp = < WORD > |
-    temp = < INT_VALUE > |
-    temp = < STRING >
-  )
-  {
-    // TODO: checking diff types
-    value.attribute = temp.toString();
-    return value;
-  }
-}
-
-Formula formula() :
-{
-  Attributer lvalue = null;
-  Token operend = null;
-  Attributer rvalue = null; 
-}
-{
-  lvalue = attribute()
-  (
-    operend = < EQUAL > |
-    operend = < GT > |
-    operend = < LT >  )
-  
-  rvalue = attribute()
-
-  {
-    Formula result = new Formula();
-    result.lvalue = lvalue;
-    result.operend = operend.toString();
-    result.rvalue = rvalue;
-    return result;
-  }
-}
