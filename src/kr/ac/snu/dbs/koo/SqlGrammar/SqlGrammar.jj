@@ -1,6 +1,8 @@
 /**
  * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
- */options{  static = true;}PARSER_BEGIN(SqlGrammar)
+ */options{  static = true;}PARSER_BEGIN(SqlGrammar)
+
+package kr.ac.snu.dbs.koo.SqlGrammar;
 import java.util.ArrayList;
 
 public class SqlGrammar{  public static void main(String args []) throws ParseException  {    SqlGrammar parser = new SqlGrammar(System.in);    while (true)    {      System.out.println("Reading from standard input...");      try      {        switch (SqlGrammar.one_line())        {          case 0 :           System.out.println("OK.");          break;          case 1 :           System.out.println("Goodbye.");          break;          default :           break;        }      }      catch (Exception e)      {        System.out.println("NOK.");
@@ -62,7 +64,7 @@ class NoTableFoundException extends Exception {
 )
 {
   // For Debug
-  if (true) { 
+  if (false) { 
     System.out.println("\n\n[INFO] select caluse");
     for (int i = 0; i < projection.size(); i++) {
       System.out.println("[INFO] " + projection.get(i));
