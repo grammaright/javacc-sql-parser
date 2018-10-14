@@ -17,15 +17,15 @@ public interface SqlGrammarConstants {
   /** RegularExpression Id. */
   int WHERE = 7;
   /** RegularExpression Id. */
-  int ASTERISK = 8;
+  int AND = 8;
   /** RegularExpression Id. */
-  int EQUAL = 9;
+  int ASTERISK = 9;
   /** RegularExpression Id. */
-  int GT = 10;
+  int EQUAL = 10;
   /** RegularExpression Id. */
-  int LT = 11;
+  int GT = 11;
   /** RegularExpression Id. */
-  int AND = 12;
+  int LT = 12;
   /** RegularExpression Id. */
   int STRING = 13;
   /** RegularExpression Id. */
@@ -50,11 +50,11 @@ public interface SqlGrammarConstants {
     "\"SELECT\"",
     "\"FROM\"",
     "\"WHERE\"",
+    "\"AND\"",
     "\"*\"",
     "<EQUAL>",
     "\">\"",
     "\"<\"",
-    "\"AND\"",
     "<STRING>",
     "<WORD>",
     "<ALPHABET>",

@@ -20,7 +20,7 @@ public class MergeSort {
     private int pagePointer[] = new int[BUFFER_SIZE];
     
     // column information
-    private String fieldName = "rating";
+    private String fieldName = "age";
     private int targetColIndex = -1;
     private boolean isString = false;
     
@@ -144,7 +144,8 @@ public class MergeSort {
                     if (isString == true) {
                         // TODO: pass
                     } else {
-                        int castedValue = Integer.parseInt((String) target);
+                        // TODO: S.txt age가 integer 임에도 Double 인 점 대응 
+                        int castedValue = (int) (Double.parseDouble((String) target));
                         if (castedValue < minIntegerValue) {
                             minIntegerValue = castedValue;
                             minIndex = i;

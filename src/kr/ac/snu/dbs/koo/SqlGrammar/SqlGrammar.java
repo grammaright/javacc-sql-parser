@@ -120,7 +120,10 @@ public class SqlGrammar implements SqlGrammarConstants {
     for (int i = 0; i < where_list.size(); i++) {
       Formula item = where_list.get(i);
       boolean isMatching = false;
-      if (item.lvalue.table != null) {
+      if (item.lvalue.table == null) {
+        // e.g. 20 < s.age is not valid 
+        {if (true) throw new ParseException();}
+      } else {
         // lvalue
         for (int j = 0; j < tables.size(); j++) {
           if (item.lvalue.table.equals(tables.get(j))) {
@@ -309,7 +312,7 @@ public class SqlGrammar implements SqlGrammarConstants {
       jj_la1_init_0();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x40020,0x80,0x80000,0x16100,0x80000,0x1000,0x4000,0x16000,0xe00,};
+      jj_la1_0 = new int[] {0x40020,0x80,0x80000,0x16200,0x80000,0x100,0x4000,0x16000,0x1c00,};
    }
 
   /** Constructor with InputStream. */
