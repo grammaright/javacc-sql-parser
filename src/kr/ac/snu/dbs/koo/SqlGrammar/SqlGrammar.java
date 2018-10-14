@@ -3,7 +3,17 @@ package kr.ac.snu.dbs.koo.SqlGrammar;
 
 import java.util.ArrayList;
 
+import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
+import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
+
+import kr.ac.snu.dbs.koo.SqlProcessor.SqlProcessor;
+
 public class SqlGrammar implements SqlGrammarConstants {
+  private static ArrayList<Attributer> mProjection = null;
+  private static ArrayList<String> mTables = null;
+  private static ArrayList<Formula> mWhereList = null;
+  private static Attributer mOrderList = null;
+
   public static void main(String args []) throws ParseException
   {
     SqlGrammar parser = new SqlGrammar(System.in);
@@ -16,6 +26,7 @@ public class SqlGrammar implements SqlGrammarConstants {
         {
           case 0 :
           System.out.println("OK.");
+          SqlProcessor.run(mProjection, mTables, mWhereList, mOrderList);
           break;
           case 1 :
           System.out.println("Goodbye.");
@@ -45,11 +56,11 @@ public class SqlGrammar implements SqlGrammarConstants {
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case SELECT:
       sql_clause();
-      jj_consume_token(18);
+      jj_consume_token(19);
     {if (true) return 0;}
       break;
-    case 18:
-      jj_consume_token(18);
+    case 19:
+      jj_consume_token(19);
     {if (true) return 1;}
       break;
     default:
@@ -64,6 +75,7 @@ public class SqlGrammar implements SqlGrammarConstants {
   ArrayList<Attributer> projection = null;
   ArrayList<String> tables = null;
   ArrayList<Formula> where_list = null;
+  Attributer order_list = null;
     jj_consume_token(SELECT);
     projection = select_clause();
     jj_consume_token(FROM);
@@ -77,80 +89,20 @@ public class SqlGrammar implements SqlGrammarConstants {
       jj_la1[1] = jj_gen;
       ;
     }
-  // For Debug
-  if (false) {
-    System.out.println("\u005cn\u005cn[INFO] select caluse");
-    for (int i = 0; i < projection.size(); i++) {
-      System.out.println("[INFO] " + projection.get(i));
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case ORDER_BY:
+      jj_consume_token(ORDER_BY);
+      order_list = order_clause();
+      break;
+    default:
+      jj_la1[2] = jj_gen;
+      ;
     }
-    System.out.println("\u005cn[INFO] from clause");
-    for (int i = 0; i < tables.size(); i++) {
-      System.out.println("[INFO] " + tables.get(i));
-    }
-    if (where_list != null) {
-      System.out.println("\u005cn[INFO] where clause");
-      for (int i = 0; i < where_list.size(); i++) {
-        System.out.println("[INFO] " + where_list.get(i));
-      }
-    }
-  }
-
-  // temporal exception for NoTableFounded
-  for (int i = 0; i < projection.size(); i++) {
-    Attributer item = projection.get(i);
-    if (item.table == null) {
-      continue;
-    }
-
-    boolean isMatching = false;
-    for (int j = 0; j < tables.size(); j++) {
-      if (item.table.equals(tables.get(j))) {
-        isMatching = true;
-        break;
-      }
-    }
-
-    if (isMatching == false) {
-      {if (true) throw new ParseException();}
-    }
-  }
-
-  // where
-  if (where_list != null) {
-    for (int i = 0; i < where_list.size(); i++) {
-      Formula item = where_list.get(i);
-      boolean isMatching = false;
-      if (item.lvalue.table == null) {
-        // e.g. 20 < s.age is not valid 
-        {if (true) throw new ParseException();}
-      } else {
-        // lvalue
-        for (int j = 0; j < tables.size(); j++) {
-          if (item.lvalue.table.equals(tables.get(j))) {
-            isMatching = true;
-            break;
-          }
-        }
-        if (isMatching == false) {
-          {if (true) throw new ParseException();}
-        }
-      }
-
-      isMatching = false;
-      if (item.rvalue.table != null) {
-        // rvalue
-        for (int j = 0; j < tables.size(); j++) {
-          if (item.rvalue.table.equals(tables.get(j))) {
-            isMatching = true;
-            break;
-          }
-        }
-        if (isMatching == false) {
-          {if (true) throw new ParseException();}
-        }
-      }
-    }
-  }
+  // transfer parser to java
+  mProjection = projection;
+  mTables = tables;
+  mWhereList = where_list;
+  mOrderList = order_list;
   }
 
   static final public ArrayList<Attributer> select_clause() throws ParseException {
@@ -172,20 +124,20 @@ public class SqlGrammar implements SqlGrammarConstants {
       label_1:
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-        case 19:
+        case 20:
           ;
           break;
         default:
-          jj_la1[2] = jj_gen;
+          jj_la1[3] = jj_gen;
           break label_1;
         }
-        jj_consume_token(19);
+        jj_consume_token(20);
         temp = attribute();
             tables.add(temp);
       }
       break;
     default:
-      jj_la1[3] = jj_gen;
+      jj_la1[4] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -198,12 +150,12 @@ public class SqlGrammar implements SqlGrammarConstants {
   ArrayList<String> tables = new ArrayList();
     table1 = jj_consume_token(WORD);
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-    case 19:
-      jj_consume_token(19);
+    case 20:
+      jj_consume_token(20);
       table2 = jj_consume_token(WORD);
       break;
     default:
-      jj_la1[4] = jj_gen;
+      jj_la1[5] = jj_gen;
       ;
     }
     tables.add(table1.toString());
@@ -226,10 +178,17 @@ public class SqlGrammar implements SqlGrammarConstants {
       formulas.add(result);
       break;
     default:
-      jj_la1[5] = jj_gen;
+      jj_la1[6] = jj_gen;
       ;
     }
     {if (true) return formulas;}
+    throw new Error("Missing return statement in function");
+  }
+
+  static final public Attributer order_clause() throws ParseException {
+  Attributer token = null;
+    token = attribute();
+    {if (true) return token;}
     throw new Error("Missing return statement in function");
   }
 
@@ -240,10 +199,10 @@ public class SqlGrammar implements SqlGrammarConstants {
     case WORD:
       temp = jj_consume_token(WORD);
       value.table = temp.toString();
-      jj_consume_token(20);
+      jj_consume_token(21);
       break;
     default:
-      jj_la1[6] = jj_gen;
+      jj_la1[7] = jj_gen;
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -257,7 +216,7 @@ public class SqlGrammar implements SqlGrammarConstants {
       temp = jj_consume_token(STRING);
       break;
     default:
-      jj_la1[7] = jj_gen;
+      jj_la1[8] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -283,7 +242,7 @@ public class SqlGrammar implements SqlGrammarConstants {
       operend = jj_consume_token(LT);
       break;
     default:
-      jj_la1[8] = jj_gen;
+      jj_la1[9] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -306,13 +265,13 @@ public class SqlGrammar implements SqlGrammarConstants {
   static public Token jj_nt;
   static private int jj_ntk;
   static private int jj_gen;
-  static final private int[] jj_la1 = new int[9];
+  static final private int[] jj_la1 = new int[10];
   static private int[] jj_la1_0;
   static {
       jj_la1_init_0();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x40020,0x80,0x80000,0x16200,0x80000,0x100,0x4000,0x16000,0x1c00,};
+      jj_la1_0 = new int[] {0x80020,0x80,0x200,0x100000,0x2c400,0x100000,0x100,0x8000,0x2c000,0x3800,};
    }
 
   /** Constructor with InputStream. */
@@ -333,7 +292,7 @@ public class SqlGrammar implements SqlGrammarConstants {
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 9; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 10; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -347,7 +306,7 @@ public class SqlGrammar implements SqlGrammarConstants {
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 9; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 10; i++) jj_la1[i] = -1;
   }
 
   /** Constructor. */
@@ -364,7 +323,7 @@ public class SqlGrammar implements SqlGrammarConstants {
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 9; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 10; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -374,7 +333,7 @@ public class SqlGrammar implements SqlGrammarConstants {
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 9; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 10; i++) jj_la1[i] = -1;
   }
 
   /** Constructor with generated Token Manager. */
@@ -390,7 +349,7 @@ public class SqlGrammar implements SqlGrammarConstants {
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 9; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 10; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -399,7 +358,7 @@ public class SqlGrammar implements SqlGrammarConstants {
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 9; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 10; i++) jj_la1[i] = -1;
   }
 
   static private Token jj_consume_token(int kind) throws ParseException {
@@ -450,12 +409,12 @@ public class SqlGrammar implements SqlGrammarConstants {
   /** Generate ParseException. */
   static public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[21];
+    boolean[] la1tokens = new boolean[22];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
     }
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 10; i++) {
       if (jj_la1[i] == jj_gen) {
         for (int j = 0; j < 32; j++) {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
@@ -464,7 +423,7 @@ public class SqlGrammar implements SqlGrammarConstants {
         }
       }
     }
-    for (int i = 0; i < 21; i++) {
+    for (int i = 0; i < 22; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
@@ -488,24 +447,6 @@ public class SqlGrammar implements SqlGrammarConstants {
 
 }
 
-class Attributer {
-  public String table = null;
-  public String attribute = null;
-
-  public String toString() {
-    return table + "." + attribute;
-  }
-}
-
-class Formula {
-  public Attributer lvalue = null;
-  public String operend = null;
-  public Attributer rvalue = null;
-
-  public String toString() {
-    return lvalue.toString() + " " + operend + " " + rvalue.toString();
-  }
-}
 
 class NoTableFoundException extends Exception {
   // TODO:

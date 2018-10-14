@@ -5,37 +5,31 @@
 package kr.ac.snu.dbs.koo.SqlGrammar;
 import java.util.ArrayList;
 
-public class SqlGrammar{  public static void main(String args []) throws ParseException  {    SqlGrammar parser = new SqlGrammar(System.in);    while (true)    {      System.out.println("Reading from standard input...");      try      {        switch (SqlGrammar.one_line())        {          case 0 :           System.out.println("OK.");          break;          case 1 :           System.out.println("Goodbye.");          break;          default :           break;        }      }      catch (Exception e)      {        System.out.println("NOK.");
+import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
+import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
+
+import kr.ac.snu.dbs.koo.SqlProcessor.SqlProcessor;
+
+public class SqlGrammar{
+  private static ArrayList<Attributer> mProjection = null;
+  private static ArrayList<String> mTables = null;
+  private static ArrayList<Formula> mWhereList = null;
+  private static Attributer mOrderList = null;
+    public static void main(String args []) throws ParseException  {    SqlGrammar parser = new SqlGrammar(System.in);    while (true)    {      System.out.println("Reading from standard input...");      try      {        switch (SqlGrammar.one_line())        {          case 0 :           System.out.println("OK.");
+          SqlProcessor.run(mProjection, mTables, mWhereList, mOrderList);          break;          case 1 :           System.out.println("Goodbye.");          break;          default :           break;        }      }      catch (Exception e)      {        System.out.println("NOK.");
         e.printStackTrace(System.out);//        System.out.println(e.getMessage());
         SqlGrammar.ReInit(System.in);      }      catch (Error e)      {        System.out.println("Oops.");//        System.out.println(e.getMessage());
         e.printStackTrace(System.out);
         break;      }    }  }}
 
-class Attributer {
-  public String table = null;
-  public String attribute = null;
-
-  public String toString() {
-    return table + "." + attribute;
-  }
-}
-
-class Formula {
-  public Attributer lvalue = null;
-  public String operend = null;
-  public Attributer rvalue = null;
-
-  public String toString() {
-    return lvalue.toString() + " " + operend + " " + rvalue.toString();
-  }
-}
 
 class NoTableFoundException extends Exception {
   // TODO:
 }PARSER_END(SqlGrammar)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN [IGNORE_CASE] : /* OPERATORS */{
   < SELECT : "SELECT" > | < FROM : "FROM" >
 | < WHERE : "WHERE" >
-| < AND : "AND" > }TOKEN :	// operator{
+| < AND : "AND" >
+| < ORDER_BY : "ORDER BY" > }TOKEN :	// operator{
   < ASTERISK : "*" >
 | < EQUAL : ("==" | "=") >
 | < GT : ">" >
@@ -52,6 +46,7 @@ TOKEN :		// input tokens
   ArrayList<Attributer> projection = null;
   ArrayList<String> tables = null;
   ArrayList<Formula> where_list = null;
+  Attributer order_list = null;
 }{
 (
   (    < SELECT >
@@ -64,82 +59,17 @@ TOKEN :		// input tokens
     < WHERE >
     where_list = where_clause()
   )?
+  (
+    < ORDER_BY >
+    order_list = order_clause()
+  )?
 )
 {
-  // For Debug
-  if (false) { 
-    System.out.println("\n\n[INFO] select caluse");
-    for (int i = 0; i < projection.size(); i++) {
-      System.out.println("[INFO] " + projection.get(i));
-    }
-    System.out.println("\n[INFO] from clause");
-    for (int i = 0; i < tables.size(); i++) {
-      System.out.println("[INFO] " + tables.get(i));
-    }
-    if (where_list != null) {
-      System.out.println("\n[INFO] where clause");
-      for (int i = 0; i < where_list.size(); i++) {
-        System.out.println("[INFO] " + where_list.get(i));
-      }
-    }
-  }
-  
-  // temporal exception for NoTableFounded
-  for (int i = 0; i < projection.size(); i++) {
-    Attributer item = projection.get(i);
-    if (item.table == null) {
-      continue;
-    }
-    
-    boolean isMatching = false;
-    for (int j = 0; j < tables.size(); j++) {
-      if (item.table.equals(tables.get(j))) {
-        isMatching = true;
-        break;
-      }
-    }
-
-    if (isMatching == false) {
-      throw new ParseException();
-    }
-  }
-
-  // where
-  if (where_list != null) {
-    for (int i = 0; i < where_list.size(); i++) {
-      Formula item = where_list.get(i);
-      boolean isMatching = false;
-      if (item.lvalue.table == null) {
-        // e.g. 20 < s.age is not valid 
-        throw new ParseException();
-      } else {
-        // lvalue
-        for (int j = 0; j < tables.size(); j++) {
-          if (item.lvalue.table.equals(tables.get(j))) {
-            isMatching = true;
-            break;
-          }
-        }
-        if (isMatching == false) {
-          throw new ParseException();
-        }
-      }
-
-      isMatching = false;
-      if (item.rvalue.table != null) {
-        // rvalue
-        for (int j = 0; j < tables.size(); j++) {
-          if (item.rvalue.table.equals(tables.get(j))) {
-            isMatching = true;
-            break;
-          }
-        }
-        if (isMatching == false) {
-          throw new ParseException();
-        } 
-      }    
-    }
-  }
+  // transfer parser to java
+  mProjection = projection;
+  mTables = tables;
+  mWhereList = where_list;
+  mOrderList = order_list;
 }
 }
 
@@ -218,6 +148,18 @@ ArrayList<Formula> where_clause() :
 
   {
     return formulas;
+  }
+}
+
+Attributer order_clause() :
+{
+  Attributer token = null;
+}
+{
+  token = attribute()
+
+  {
+    return token;
   }
 }
 

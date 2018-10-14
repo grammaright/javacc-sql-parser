@@ -7,7 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class MergeSort {
-    public static int PAGE_SIZE = 2;
+    public static int PAGE_SIZE = 4096;
     public static int BUFFER_SIZE = 4;
     
     // buffer init
@@ -28,15 +28,14 @@ public class MergeSort {
     private int currentRun = 0;
     private int beforeRun = 0;
     
+    private String pathPrefix = "";
+    private String lastPath = null;
     
-    public static void main(String args []) {
-        MergeSort a = new MergeSort();
-        a.pipeLine();
-        return;
-    }
-    
-    private void pipeLine() {
-        firstPass("resources/S2.txt");
+    public void executeOnPath(String path, String prefix, String field) {
+        pathPrefix = prefix;
+        fieldName = field;
+        
+        firstPass(path);
         beforeRun = currentRun;
         currentRun = 0;
 
@@ -128,7 +127,8 @@ public class MergeSort {
             return;
         }
         // TODO: path name
-        String currentPath = "resources/B_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun)  + ".txt";
+        String currentPath = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun)  + ".txt";
+        lastPath = currentPath;
         
         try {
             FileWriter fw = new FileWriter(currentPath);
@@ -192,14 +192,17 @@ public class MergeSort {
         FileReader[] fr = new FileReader[BUFFER_SIZE - 1];
         BufferedReader[] br = new BufferedReader[BUFFER_SIZE - 1];
         
-        String writePath = "resources/B_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun)  + ".txt";
+        String writePath = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun)  + ".txt";
+        lastPath = writePath;
+        
         FileWriter fw = new FileWriter(writePath, true);
         BufferedWriter bw = new BufferedWriter(fw);
         
         int localPagePointer[] = new int[BUFFER_SIZE];
         int gap = Math.min(scannedRun + BUFFER_SIZE - 1, beforeRun);
         for (int i = scannedRun; i < gap; i++) {
-            String currentPath = "resources/B_" + Integer.toString(currentPass - 1) + "_" + Integer.toString(i)  + ".txt";
+            String currentPath = pathPrefix+ "_" + Integer.toString(currentPass - 1) + "_" + Integer.toString(i)  + ".txt";
+            
             fr[i % (BUFFER_SIZE - 1)] = new FileReader(currentPath);
             br[i % (BUFFER_SIZE - 1)] = new BufferedReader(fr[i % (BUFFER_SIZE - 1)]);
             
@@ -253,7 +256,8 @@ public class MergeSort {
                 if (isString == true) {
                     // TODO: pass
                 } else {
-                    int castedValue = Integer.parseInt((String) target);
+                    // TODO: S.txt age가 double인 것  대응 
+                    int castedValue = (int) Double.parseDouble((String) target);
                     if (castedValue < minIntegerValue) {
                         minIntegerValue = castedValue;
                         minIndex = i;
@@ -294,7 +298,6 @@ public class MergeSort {
         fw.close();
 
         for (int i = 0; i < calMin; i++) {
-//            String currentPath = "resources/B_" + Integer.toString(currentPass - 1) + "_" + Integer.toString(i)  + ".txt";
             fr[i].close();
             br[i].close();
         }
@@ -303,5 +306,8 @@ public class MergeSort {
         return scannedRun + calMin;
     }
 
+    public String getLastPath() {
+        return lastPath;
+    }
     
 }

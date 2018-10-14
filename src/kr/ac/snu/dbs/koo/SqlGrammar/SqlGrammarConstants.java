@@ -19,23 +19,25 @@ public interface SqlGrammarConstants {
   /** RegularExpression Id. */
   int AND = 8;
   /** RegularExpression Id. */
-  int ASTERISK = 9;
+  int ORDER_BY = 9;
   /** RegularExpression Id. */
-  int EQUAL = 10;
+  int ASTERISK = 10;
   /** RegularExpression Id. */
-  int GT = 11;
+  int EQUAL = 11;
   /** RegularExpression Id. */
-  int LT = 12;
+  int GT = 12;
   /** RegularExpression Id. */
-  int STRING = 13;
+  int LT = 13;
   /** RegularExpression Id. */
-  int WORD = 14;
+  int STRING = 14;
   /** RegularExpression Id. */
-  int ALPHABET = 15;
+  int WORD = 15;
   /** RegularExpression Id. */
-  int INT_VALUE = 16;
+  int ALPHABET = 16;
   /** RegularExpression Id. */
-  int DIGIT = 17;
+  int INT_VALUE = 17;
+  /** RegularExpression Id. */
+  int DIGIT = 18;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -51,6 +53,7 @@ public interface SqlGrammarConstants {
     "\"FROM\"",
     "\"WHERE\"",
     "\"AND\"",
+    "\"ORDER BY\"",
     "\"*\"",
     "<EQUAL>",
     "\">\"",
