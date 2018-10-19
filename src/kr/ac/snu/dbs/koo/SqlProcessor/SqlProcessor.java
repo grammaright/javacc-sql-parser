@@ -4,13 +4,18 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
 import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
 import kr.ac.snu.dbs.koo.SqlGrammar.ParseException;
 import kr.ac.snu.dbs.koo.MergeSort.MergeSort;
+import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlTable;
 
 public class SqlProcessor {
+
+    public static boolean DEBUGGING = true;
+
     private ArrayList<Attributer> projection = null;
     private ArrayList<String> tables = null;
     private ArrayList<Formula> whereList = null;
@@ -106,23 +111,19 @@ public class SqlProcessor {
     }
 
     public void runQuery() throws ParseException {
-        if (true) {
-            debug();
-        }
+        if (DEBUGGING) debug();
         
         raiseExceptions();
-        
-        // table 1개만 
-        constructTable(tables);
-        
+
+        // TODO: Interesting orders: from 절의 table 도 고려해야 함.
+        HashSet<String> interestingOrder = constructInterestingOrder();
+
+        // TODO: 현재는 Table 1개만 고려
+        SqlTable table = SqlTable.constructTable(tables.get(0), interestingOrder);
+
         // order by
-        ArrayList<String> orderResult = null;
         if (orderList != null) {
-            MergeSort ms = new MergeSort();
-            String tablePath = "resources/" + tables.get(0);
-            ms.executeOnPath(tablePath + ".txt", tablePath, orderList.attribute);
-            orderResult = getOrderResult(ms.getLastPath());
-            orderByTable(orderList, orderResult);
+            table = MergeSort.orderTable(table, orderList);
         }
         
         // where
@@ -167,6 +168,21 @@ public class SqlProcessor {
         
         printTables();
     }
+
+    private HashSet<String> constructInterestingOrder() {
+        HashSet<String> result = new HashSet<>();
+        for (int i = 0; i < projection.size(); i++) {
+            result.add(projection.get(i).attribute);
+        }
+
+        for (int i = 0; i < whereList.size(); i++) {
+            result.add(whereList.get(i).lvalue.attribute);
+        }
+
+        result.add(orderList.attribute);
+
+        return result;
+    }
     
     // projection 도 함 
     private void printTables() {
@@ -185,74 +201,14 @@ public class SqlProcessor {
                 }
             }
         }
-        System.out.println("");
+        System.out.println();
         
         for (int i = 0; i < values.size(); i++) {
             ArrayList<String> item = values.get(i);
             for (int j = 0; j < printIndexes.size(); j++) {
                 System.out.print(item.get(printIndexes.get(j)) + "\t");
             }
-            System.out.println("");
-        }
-    }
-    
-    private void orderByTable(Attributer orderList, ArrayList<String> orderResult) {
-        int colIndex = cols.indexOf(orderList.attribute);
-        ArrayList<ArrayList<String>> newValues = new ArrayList<>();
-        
-        for (int i = 0; i < orderResult.size(); i++) {
-            int target = (int) Double.parseDouble(orderResult.get(i));
-            
-            for (int j = 0; j < values.size(); j++) {
-                int target2 = (int) Double.parseDouble(values.get(j).get(colIndex));
-                if (target == target2) {
-                    newValues.add(values.get(j));
-                    values.remove(values.get(j));
-                    j--;
-                }
-            }
-        }
-        
-        values = newValues;
-    }
-    
-    private void constructTable(ArrayList<String> tables) {
-        String tablePath = "resources/" + tables.get(0) + ".txt";
-        
-        // TODO: 
-        cols = new ArrayList<>();
-        values = new ArrayList<>();
-        
-        try {
-            FileReader fr = new FileReader(tablePath);
-            BufferedReader br = new BufferedReader(fr);
-
-            String line = null;
-            boolean isColProcess = true;
-            while ((line = br.readLine()) != null) {
-                String[] items = line.split(" ");
-
-                // Column name 관련 처리
-                if (isColProcess) {
-                    isColProcess = false;
-                    for (int i = 0; i < items.length; i++) {
-                        cols.add(items[i].split("\\(")[0]);
-                    }
-                } else {
-                    ArrayList<String> row = new ArrayList<>();
-                    for (int i = 0; i < items.length; i++) {
-                        row.add(items[i]);
-                    }
-                    values.add(row);
-                }
-            }
-            
-            
-            br.close();
-            fr.close();
-            
-        } catch (IOException e) {
-            e.printStackTrace();       
+            System.out.println();
         }
     }
     
@@ -279,55 +235,6 @@ public class SqlProcessor {
         return result;
     }
     
-    private void temp(String path) {
-        try {
-            FileReader fr = new FileReader(path);
-            BufferedReader br = new BufferedReader(fr);
-
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                String[] items = line.split(" ");
-
-//                // Column name 관련 처리
-//                if (targetColIndex == -1) {
-//                    for (int i = 0; i < items.length; i++) {
-////                        System.out.println(items[i]);
-//                        if (fieldName.equals(items[i].split("\\(")[0])) {
-//                            // col index 
-//                            targetColIndex = i;
-//                            
-//                            // type check
-//                            // TODO: regex를 쓰던지..
-//                            String type = items[i].split("\\(")[1].split("\\)")[0];
-//                            if (type.equals("string")) {
-//                                isString = true;
-//                            } else {
-//                                isString = false;
-//                            }
-//                            
-//                            break;
-//                        }
-//                    }
-//                    
-//                    if (targetColIndex == -1) {
-//                        System.out.println("No field name founded.");
-//                        break;
-//                    }
-//                    
-//                    continue;
-//                }
-
-            }
-            
-            
-            br.close();
-            fr.close();
-            
-        } catch (IOException e) {
-            e.printStackTrace();       
-        }
-    }
-
     // For Debug
     public void debug() throws ParseException {
         System.out.println("\n\n[INFO] select caluse");

@@ -1,5 +1,8 @@
 package kr.ac.snu.dbs.koo.MergeSort;
 
+import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
+import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.*;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -13,27 +16,38 @@ public class MergeSort {
     // buffer init
     // 0 ~ BUFFER_SIZE - 1: Input Buffer
     // BUFFER_SIZE - 1 ~ BUFFER_SIZE: Output Buffer
-    private String[][] buffer = new String[BUFFER_SIZE][PAGE_SIZE];
+    private SqlRecord[][] buffer = new SqlRecord[BUFFER_SIZE][PAGE_SIZE];
     
-    // buffer pointer init 
+    // buffer pointer init
     private int bufferPointer = 0;
     private int pagePointer[] = new int[BUFFER_SIZE];
     
     // column information
-    private String fieldName = "age";
+    private SqlColumn column = new SqlColumn();
+
+    // sort by information
+    private String targetFieldName = "age";
     private int targetColIndex = -1;
-    private boolean isString = false;
-    
+    private SqlValueType targetType = SqlValueType.NULL;
+
     private int currentPass = 0;
     private int currentRun = 0;
     private int beforeRun = 0;
     
     private String pathPrefix = "";
     private String lastPath = null;
-    
-    public void executeOnPath(String path, String prefix, String field) {
+
+    public static SqlTable orderTable(SqlTable original, Attributer orderList) throws Exception {
+        MergeSort ms = new MergeSort();
+        String tablePath = "resources/" + original.tableName;
+        ms.executeOnPath(tablePath + ".txt", tablePath, orderList.attribute);
+
+        return null;
+    }
+
+    public void executeOnPath(String path, String prefix, String field) throws Exception {
         pathPrefix = prefix;
-        fieldName = field;
+        targetFieldName = field;
         
         firstPass(path);
         beforeRun = currentRun;
@@ -53,12 +67,11 @@ public class MergeSort {
     
     private void flush() {
         // flush all data (buffer, pointer)
-        buffer = new String[BUFFER_SIZE][PAGE_SIZE];
-        bufferPointer = 0;
+        buffer = new SqlRecord[BUFFER_SIZE][PAGE_SIZE];
         pagePointer = new int[BUFFER_SIZE];
     }
     
-    private void firstPass(String path) {
+    private void firstPass(String path) throws Exception {
         try {
             FileReader fr = new FileReader(path);
             BufferedReader br = new BufferedReader(fr);
@@ -69,21 +82,11 @@ public class MergeSort {
 
                 // Column name 관련 처리
                 if (targetColIndex == -1) {
-                    for (int i = 0; i < items.length; i++) {
-//                        System.out.println(items[i]);
-                        if (fieldName.equals(items[i].split("\\(")[0])) {
-                            // col index 
+                    SqlColumn column = SqlColumn.constructColumn(items, null);
+                    for (int i = 0; i < column.values.size(); i++) {
+                        if (column.values.get(i).equals(targetFieldName)) {
                             targetColIndex = i;
-                            
-                            // type check
-                            // TODO: regex를 쓰던지..
-                            String type = items[i].split("\\(")[1].split("\\)")[0];
-                            if (type.equals("string")) {
-                                isString = true;
-                            } else {
-                                isString = false;
-                            }
-                            
+                            targetType = column.types.get(i);
                             break;
                         }
                     }
@@ -96,7 +99,7 @@ public class MergeSort {
                     continue;
                 }
                 
-                fillInputBufferForFirstPass(items[targetColIndex]);
+                fillInputBufferForFirstPass(column, items);
             }
             
             // 끝나고 나머지들 
@@ -110,66 +113,68 @@ public class MergeSort {
         }
     }
     
-    private void fillInputBufferForFirstPass(String input) {
-        buffer[0][pagePointer[0]] = input;
-        pagePointer[0]++;
-        if (pagePointer[0] >= PAGE_SIZE) {
-            // 
-            writeOutputBufferForFirstPass();
-            
-            // flush
-            pagePointer[0] = 0;
+    private void fillInputBufferForFirstPass(SqlColumn column, String[] input) {
+        buffer[bufferPointer][pagePointer[bufferPointer]++] = SqlRecord.constructRecord(column, input);
+        if (pagePointer[bufferPointer] >= PAGE_SIZE) {
+            bufferPointer++;
+            if (bufferPointer >= BUFFER_SIZE) {
+                writeOutputBufferForFirstPass();
+                for (int i = 0; i < BUFFER_SIZE; i++) {
+                    bufferPointer = 0;
+                    pagePointer[i] = 0;
+                }
+            }
         }
     }
     
     private void writeOutputBufferForFirstPass() {
-        if (pagePointer[0] == 0) {
-            return;
-        }
-        // TODO: path name
-        String currentPath = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun)  + ".txt";
-        lastPath = currentPath;
-        
         try {
-            FileWriter fw = new FileWriter(currentPath);
-            BufferedWriter bw = new BufferedWriter(fw);
-            int count = 0;
-        
-            while (count < pagePointer[0]) {
-                // 비교 대상 
-                int minIndex = -1;
-                int minIntegerValue = Integer.MAX_VALUE;
-                for (int i = 0; i < pagePointer[0]; i++) {
-                    Object target = buffer[0][i];
-                    if (isString == true) {
-                        // TODO: pass
-                    } else {
-                        // TODO: S.txt age가 integer 임에도 Double 인 점 대응 
-                        int castedValue = (int) (Double.parseDouble((String) target));
-                        if (castedValue < minIntegerValue) {
-                            minIntegerValue = castedValue;
+            for (int i = 0; i < BUFFER_SIZE; i++) {
+                if (pagePointer[i] == 0) {
+                    continue;
+                }
+                String currentPath = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun) + ".txt";
+                lastPath = currentPath;
+
+                FileWriter fw = new FileWriter(currentPath);
+                BufferedWriter bw = new BufferedWriter(fw);
+
+                int count = 0;
+                while (count < pagePointer[i]) {
+                    // 비교 대상
+                    int minIndex = -1;
+                    SqlRecord minValue = null;
+                    for (int j = 1; j < pagePointer[i]; j++) {
+                        SqlRecord target = buffer[i][j];
+                        if (target == null) {
+                            continue;
+                        }
+
+                        if (minValue == null || SqlValue.compare(target.values.get(targetColIndex), minValue.values.get(targetColIndex)) == -1) {
+                            minValue = target;
                             minIndex = i;
                         }
                     }
+
+                    // write to file
+                    bw.write(buffer[i][minIndex] + " ");
+                    buffer[i][minIndex] = null;
+                    count += 1;
                 }
-                
-                // write to file
-                bw.write(buffer[0][minIndex] + " ");
-                buffer[0][minIndex] = Integer.toString(Integer.MAX_VALUE);
-                count += 1;
+
+                bw.close();
+                fw.close();
+
+                currentRun += 1;
+                pagePointer[i] = 0;
             }
-            
-            bw.close();
-            fw.close();
         } catch (IOException e) {
             e.printStackTrace();       
         }
-        
-        currentRun += 1;
     }
     
     private void otherPass() {
-        // TODO: exception condiiton check
+        // TODO: exception condition check
         try {
             int scannedRun = 0;
             while (true) {
@@ -256,7 +261,7 @@ public class MergeSort {
                 if (isString == true) {
                     // TODO: pass
                 } else {
-                    // TODO: S.txt age가 double인 것  대응 
+                    // TODO: S.txt age가 double인 것  대응
                     int castedValue = (int) Double.parseDouble((String) target);
                     if (castedValue < minIntegerValue) {
                         minIntegerValue = castedValue;
@@ -266,8 +271,8 @@ public class MergeSort {
             }
             
             // TODO: eofCount 와 실제 다 읽은 경우가 다를 수 있음.
-            // TODO: 추후 수정 
-            // TODO: 홀수 개 들어가있거나 할때 그런 거같기도..
+            // 추후 수정
+            // 홀수 개 들어가있거나 할때 그런 거같기도..
             if (minIndex == -1) {
                 break;
             }
@@ -309,5 +314,5 @@ public class MergeSort {
     public String getLastPath() {
         return lastPath;
     }
-    
+
 }
