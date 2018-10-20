@@ -111,7 +111,9 @@ public class SqlProcessor {
     }
 
     public void runQuery() throws Exception {
-        if (DEBUGGING) debug();
+        if (DEBUGGING) debug();     // For debugging SQL Parsing
+
+        long startTime = System.currentTimeMillis();
 
         raiseExceptions();
 
@@ -124,6 +126,8 @@ public class SqlProcessor {
         table = processWhere(table, whereList);                 // where
 
         printTables(table);
+
+        System.out.format("Done in %d ms\n", System.currentTimeMillis() - startTime);
     }
 
     // where
