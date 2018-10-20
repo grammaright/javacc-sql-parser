@@ -38,11 +38,12 @@ public class MergeSort {
     private String lastPath = null;
 
     public static SqlTable orderTable(SqlTable original, Attributer orderList) throws Exception {
+        if (orderList == null) return original;
+
         MergeSort ms = new MergeSort();
         String tablePath = "resources/" + original.tableName;
         ms.executeOnPath(tablePath + ".txt", tablePath, orderList.attribute);
-
-        return null;
+        return SqlTable.constructTable(ms.lastPath, null);
     }
 
     public void executeOnPath(String path, String prefix, String field) throws Exception {
@@ -62,7 +63,6 @@ public class MergeSort {
             currentRun = 0;
             flush();
         }
-        // TODO
     }
     
     private void flush() {
@@ -157,7 +157,12 @@ public class MergeSort {
                     }
 
                     // write to file
-                    bw.write(buffer[i][minIndex] + " ");
+                    for (int j = 0; j < buffer[i][minIndex].values.size(); j++) {
+                        bw.write(buffer[i][minIndex].values.get(j) + " ");
+                    }
+                    bw.write("\n");
+
+                    // clear buffer
                     buffer[i][minIndex] = null;
                     count += 1;
                 }
@@ -220,17 +225,18 @@ public class MergeSort {
             int eofCount = 0;
             for (int i = 0; i < calMin; i++) {
                 if (localPagePointer[i] >= PAGE_SIZE) {
-                    String line = null;
-                    if (!((line = br[i].readLine()) != null)) {
-                        eofCount++;
-                        continue;
-                    }
-                    
                     localPagePointer[i] = 0;
                     pagePointer[i] = 0;
-                    String[] items = line.split(" ");
-                    for (int j = 0; j < items.length; j++) {
-                        buffer[i][pagePointer[i]++] = items[j];
+                    for (int j = 0; j < PAGE_SIZE; j++) {
+                        String line = null;
+                        if ((line = br[i].readLine()) == null) {
+                            if (j == 0) eofCount++;
+                            break;
+                        }
+
+                        String[] items = line.split(" ");
+                        if (items.length != column.values.size()) break;
+                        buffer[i][pagePointer[i]++] = SqlRecord.constructRecord(column, items);
                     }
                 }
             }
@@ -248,25 +254,23 @@ public class MergeSort {
                 }
             }
             
-         // pointer가 가리키는 값 중에서 가장 작은 값 찾기
+             // pointer가 가리키는 값 중에서 가장 작은 값 찾기
             int minIndex = -1;
-            int minIntegerValue = Integer.MAX_VALUE;
+            SqlRecord minValue = null;
             for (int i = 0; i < BUFFER_SIZE - 1; i++) {
                 int lowest = Math.min(PAGE_SIZE, pagePointer[i]);
                 if (localPagePointer[i] >= lowest) {
                     continue;
                 }
                 
-                Object target = buffer[i][localPagePointer[i]];
-                if (isString == true) {
-                    // TODO: pass
-                } else {
-                    // TODO: S.txt age가 double인 것  대응
-                    int castedValue = (int) Double.parseDouble((String) target);
-                    if (castedValue < minIntegerValue) {
-                        minIntegerValue = castedValue;
-                        minIndex = i;
-                    }
+                SqlRecord target = buffer[i][localPagePointer[i]];
+                if (target == null) {
+                    continue;
+                }
+
+                if (minValue == null || SqlValue.compare(target.values.get(targetColIndex), minValue.values.get(targetColIndex)) == -1) {
+                    minValue = target;
+                    minIndex = i;
                 }
             }
             
@@ -281,13 +285,18 @@ public class MergeSort {
             localPagePointer[minIndex]++;
             
             // Output buffer 쓰기 
-            buffer[BUFFER_SIZE - 1][localPagePointer[BUFFER_SIZE - 1]++] = Integer.toString(minIntegerValue);
+            buffer[BUFFER_SIZE - 1][localPagePointer[BUFFER_SIZE - 1]++] = minValue;
             // pointer overflow 
             if (localPagePointer[BUFFER_SIZE - 1] >= PAGE_SIZE) {
                 // TODO: write file
                 for (int j = 0; j < PAGE_SIZE; j++) {
-                    bw.write(buffer[BUFFER_SIZE - 1][j] + " ");
-                    buffer[BUFFER_SIZE - 1][j] = Integer.toString(Integer.MAX_VALUE);
+                    SqlRecord sv = buffer[BUFFER_SIZE - 1][j];
+
+                    for (int k = 0; k < sv.values.size(); k++) {
+                        bw.write(sv.values.get(k) + " ");
+                    }
+
+                    bw.write("\n");
                 }
                 bw.write("\n");
                 localPagePointer[BUFFER_SIZE - 1] = 0;
@@ -296,7 +305,13 @@ public class MergeSort {
 
         // last remained
         for (int j = 0; j < localPagePointer[BUFFER_SIZE - 1]; j++) {
-            bw.write(buffer[BUFFER_SIZE - 1][j] + " ");
+            SqlRecord sv = buffer[BUFFER_SIZE - 1][j];
+
+            for (int k = 0; k < sv.values.size(); k++) {
+                bw.write(sv.values.get(k) + " ");
+            }
+
+            bw.write("\n");
         }
             
         bw.close();
@@ -306,8 +321,7 @@ public class MergeSort {
             fr[i].close();
             br[i].close();
         }
-        
-        
+
         return scannedRun + calMin;
     }
 

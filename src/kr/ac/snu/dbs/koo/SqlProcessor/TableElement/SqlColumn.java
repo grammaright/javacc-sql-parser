@@ -5,26 +5,51 @@ import java.util.HashSet;
 
 public class SqlColumn {
     public ArrayList<String> values;
+    public ArrayList<Integer> columnIndices;
     public ArrayList<SqlValueType> types;
 
     public static SqlColumn constructColumn(String[] items, HashSet<String> interestingOrder) throws Exception {
-        for (String item : items) {
-            // consider interesting order
+        SqlColumn column = new SqlColumn();
+        column.values = new ArrayList<>();
+        column.columnIndices = new ArrayList<>();
+        column.types = new ArrayList<>();
 
-            if (interestingOrder != null && !interestingOrder.contains(item)) {
-                continue;
+        // asterisk
+        boolean existAsterisk = false;
+        if (interestingOrder != null && interestingOrder.contains("*")) {
+            existAsterisk = true;
+            interestingOrder.remove("*");
+        }
+
+        for (int i = 0; i < items.length; i++) {
+            String item = items[i];
+            String[] temp = item.split("\\(");
+
+            // consider interesting order
+            if (!existAsterisk) {
+                if (interestingOrder != null && !interestingOrder.contains(temp[0])) {
+                    interestingOrder.remove(temp[0]);
+                    continue;
+                }
             }
 
-            String[] temp = item.split("\\(");
-            table.column.values.add(temp[0]);
+            interestingOrder.remove(temp[0]);
+            column.values.add(temp[0]);
+            column.columnIndices.add(i);
             String type = temp[1].split("\\)")[0];
             if (type.equals("integer")) {
-                table.column.types.add(SqlValueType.INT);
+                column.types.add(SqlValueType.INT);
             } else if (type.equals("string")) {
-                table.column.types.add(SqlValueType.STRING);
+                column.types.add(SqlValueType.STRING);
             } else {
                 throw new Exception("UnExcepted type");
             }
         }
+
+        if (!interestingOrder.isEmpty()) {
+           throw new Exception("no column in table");
+        }
+
+        return column;
     }
 }

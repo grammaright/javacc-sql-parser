@@ -4,6 +4,17 @@ public class SqlValue {
 
     public SqlValueType type = SqlValueType.NULL;
 
+    public static SqlValue constructValue(String value) {
+        // TODO: 정교한 Exception
+        try {
+            SqlValueInteger result = new SqlValueInteger((String) value);
+            return result;
+        } catch (NumberFormatException e) {
+            SqlValueString result = new SqlValueString((String) value);
+            return result;
+        }
+    }
+
     public static int compare(SqlValue first, SqlValue second) {
         if (first.type != second.type) {
             // TODO: exception
@@ -31,5 +42,15 @@ public class SqlValue {
             }
         }
         return 0;
+    }
+
+    public String toString() {
+        if (type == SqlValueType.INT) {
+            return ((SqlValueInteger) this).toString();
+        } else if (type == SqlValueType.STRING) {
+            return ((SqlValueString) this).toString();
+        }
+
+        return null;
     }
 }

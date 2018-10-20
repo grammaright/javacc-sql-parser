@@ -7,18 +7,17 @@ public class SqlRecord {
 
     public static SqlRecord constructRecord(SqlColumn column, String[] items) {
         SqlRecord record = new SqlRecord();
+        record.values = new ArrayList<>();
 
-        for (int i = 0; i < items.length; i++) {
+        for (int i = 0; i < column.values.size(); i++) {
             SqlValueType type = column.types.get(i);
+            int index = column.columnIndices.get(i);
+
             if (type == SqlValueType.INT) {
-                SqlValueInteger value = new SqlValueInteger();
-                value.value = (int) (Double.parseDouble(items[i]));
-                value.type = type;
+                SqlValueInteger value = new SqlValueInteger(items[index]);
                 record.values.add(value);
             } else if (type == SqlValueType.STRING) {
-                SqlValueString value = new SqlValueString();
-                items[i].getChars(0, SqlValueString.MAX_CHAR_SIZE, value.value, 0);
-                value.type = type;
+                SqlValueString value = new SqlValueString(items[index]);
                 record.values.add(value);
             }
         }

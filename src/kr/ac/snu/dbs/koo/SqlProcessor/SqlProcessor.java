@@ -10,7 +10,10 @@ import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
 import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
 import kr.ac.snu.dbs.koo.SqlGrammar.ParseException;
 import kr.ac.snu.dbs.koo.MergeSort.MergeSort;
+import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlRecord;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlTable;
+import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlValue;
+import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlValueType;
 
 public class SqlProcessor {
 
@@ -20,12 +23,9 @@ public class SqlProcessor {
     private ArrayList<String> tables = null;
     private ArrayList<Formula> whereList = null;
     private Attributer orderList = null;
-    
-    private ArrayList<String> cols = new ArrayList<>();
-    private ArrayList<ArrayList<String>> values = new ArrayList<>();
 
     public static void run(ArrayList<Attributer> projection, ArrayList<String> tables, ArrayList<Formula> whereList,
-            Attributer orderList) throws ParseException {
+            Attributer orderList) throws Exception {
 
 //        1. 무조건 오름차순으로 출력
 //        2. 한 column에 대해서만 sorting한다고 가정
@@ -110,9 +110,9 @@ public class SqlProcessor {
         }
     }
 
-    public void runQuery() throws ParseException {
+    public void runQuery() throws Exception {
         if (DEBUGGING) debug();
-        
+
         raiseExceptions();
 
         // TODO: Interesting orders: from 절의 table 도 고려해야 함.
@@ -120,93 +120,97 @@ public class SqlProcessor {
 
         // TODO: 현재는 Table 1개만 고려
         SqlTable table = SqlTable.constructTable(tables.get(0), interestingOrder);
+        table = MergeSort.orderTable(table, orderList);         // order by
+        table = processWhere(table, whereList);                 // where
 
-        // order by
-        if (orderList != null) {
-            table = MergeSort.orderTable(table, orderList);
-        }
-        
-        // where
-        if (whereList != null) {
-            for (int i = 0; i < whereList.size(); i++) {
-                Formula item = whereList.get(i);
-                if (item.operend.equals("=") || item.operend.equals("==")) {
-                    int index = cols.indexOf(item.lvalue.attribute);
-                    for (int j = 0; j < values.size(); j++) {
-                        String target = values.get(j).get(index);
-                        if (!target.equals(item.rvalue.attribute)) {
-                            values.remove(j);
-                            j--;
-                            continue;
-                        }
+        printTables(table);
+    }
+
+    // where
+    private SqlTable processWhere(SqlTable table, ArrayList<Formula> whereList) {
+        if (whereList == null) return table;
+
+        // TODO: performance
+        for (int i = 0; i < whereList.size(); i++) {
+            Formula item = whereList.get(i);
+            if (item.operend.equals("=") || item.operend.equals("==")) {
+                int index = table.column.values.indexOf(item.lvalue.attribute);
+                for (int j = 0; j < table.records.size(); j++) {
+                    SqlValue target1 = table.records.get(j).values.get(index);
+                    SqlValue target2 = SqlValue.constructValue(item.rvalue.attribute);
+                    if (SqlValue.compare(target1, target2) != 0) {
+                        table.records.remove(j);
+                        j--;
                     }
-                } else if (item.operend.equals("<")) {
-                    int index = cols.indexOf(item.lvalue.attribute);
-                    for (int j = 0; j < values.size(); j++) {
-                        int target = Integer.parseInt(values.get(j).get(index));
-                        int rvalue = Integer.parseInt(item.rvalue.attribute);
-                        if (!(target < rvalue)) {
-                            values.remove(j);
-                            j--;
-                            continue;
-                        }
+                }
+            } else if (item.operend.equals("<")) {
+                int index = table.column.values.indexOf(item.lvalue.attribute);
+                for (int j = 0; j < table.records.size(); j++) {
+                    SqlValue target1 = table.records.get(j).values.get(index);
+                    SqlValue target2 = SqlValue.constructValue(item.rvalue.attribute);
+                    if (SqlValue.compare(target1, target2) == -1) {
+                        table.records.remove(j);
+                        j--;
                     }
-                } else if (item.operend.equals(">")) {
-                    int index = cols.indexOf(item.lvalue.attribute);
-                    for (int j = 0; j < values.size(); j++) {
-                        int target = Integer.parseInt(values.get(j).get(index));
-                        int rvalue = Integer.parseInt(item.rvalue.attribute);
-                        if (!(target > rvalue)) {
-                            values.remove(j);
-                            j--;
-                            continue;
-                        }
+                }
+            } else if (item.operend.equals(">")) {
+                int index = table.column.values.indexOf(item.lvalue.attribute);
+                for (int j = 0; j < table.records.size(); j++) {
+                    SqlValue target1 = table.records.get(j).values.get(index);
+                    SqlValue target2 = SqlValue.constructValue(item.rvalue.attribute);
+                    if (SqlValue.compare(target1, target2) == 1) {
+                        table.records.remove(j);
+                        j--;
                     }
                 }
             }
         }
-        
-        printTables();
+
+        return table;
     }
 
     private HashSet<String> constructInterestingOrder() {
         HashSet<String> result = new HashSet<>();
-        for (int i = 0; i < projection.size(); i++) {
-            result.add(projection.get(i).attribute);
+        if (projection != null) {
+            for (int i = 0; i < projection.size(); i++) {
+                result.add(projection.get(i).attribute);
+            }
         }
 
-        for (int i = 0; i < whereList.size(); i++) {
-            result.add(whereList.get(i).lvalue.attribute);
+        if (whereList != null) {
+            for (int i = 0; i < whereList.size(); i++) {
+                result.add(whereList.get(i).lvalue.attribute);
+            }
         }
 
-        result.add(orderList.attribute);
+        if (orderList != null) result.add(orderList.attribute);
 
         return result;
     }
     
     // projection 도 함 
-    private void printTables() {
+    private void printTables(SqlTable table) {
         ArrayList<Integer> printIndexes = new ArrayList<>();
-        if (projection.size() == 1 && projection.get(0).attribute.equals("*")) {
-            for (int i = 0; i < cols.size(); i++) {
-                printIndexes.add(i);
-                System.out.print(cols.get(i) + "\t");
-            }
-        } else {
-            for (int i = 0; i < projection.size(); i++) {
-                int index = cols.indexOf(projection.get(i).attribute);
+        for (int i = 0; i < projection.size(); i++) {
+            if (projection.get(i).attribute.equals("*")) {
+                for (int j = 0; j < table.column.values.size(); j++) {
+                    printIndexes.add(table.column.columnIndices.get(j));
+                    System.out.print(String.format("%10s\t", table.column.values.get(j)));
+                }
+            } else {
+                int index = table.column.values.indexOf(projection.get(i).attribute);
                 if (index != -1) {
                     printIndexes.add(index);
-                    System.out.print(projection.get(i).attribute + "\t");
+                    System.out.print(String.format("%10s\t", projection.get(i).attribute));
                 }
             }
         }
         System.out.println();
         
-        for (int i = 0; i < values.size(); i++) {
-            ArrayList<String> item = values.get(i);
+        for (int i = 0; i < table.records.size(); i++) {
+            SqlRecord item = table.records.get(i);
             for (int j = 0; j < printIndexes.size(); j++) {
-                System.out.print(item.get(printIndexes.get(j)) + "\t");
+                System.out.print(String.format("%10s\t", item.values.get(printIndexes.get(j)).toString()));
             }
             System.out.println();
         }
