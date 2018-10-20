@@ -48,4 +48,35 @@ public class SqlTable {
 
         return table;
     }
+
+    public static SqlTable constructTableFromMergeSorted(SqlTable original, String filename) {
+        SqlTable table = new SqlTable();
+        table.tableName = original.tableName;
+        table.column = original.column;
+        table.records = new ArrayList<>();
+
+        String tablePath = filename + ".txt";
+
+        try {
+            FileReader fr = new FileReader(tablePath);
+            BufferedReader br = new BufferedReader(fr);
+
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                String[] items = line.split(" ");
+                if (items.length < table.column.values.size()) continue;
+
+                SqlRecord record = SqlRecord.constructRecord(table.column, items);
+                table.records.add(record);
+            }
+
+            br.close();
+            fr.close();
+        } catch (Exception e) {
+            // TODO: Exception handling
+            e.printStackTrace();
+        }
+
+        return table;
+    }
 }

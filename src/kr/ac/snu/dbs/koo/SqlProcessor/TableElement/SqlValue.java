@@ -34,11 +34,11 @@ public class SqlValue {
 
             if (f.value.equals(s.value)) return 0;
             for (int i = 0; i < SqlValueString.MAX_CHAR_SIZE; i++) {
-                if (f.value.length < (i + 1)) return -1;
-                else if (s.value.length < (i + 1)) return 1;
+                if (f.value.length < (i + 1)) return 1;
+                else if (s.value.length < (i + 1)) return -1;
 
-                if (f.value[i] < s.value[i]) return -1;
-                else return 1;
+                if (f.value[i] < s.value[i]) return 1;
+                else return -1;
             }
         }
         return 0;

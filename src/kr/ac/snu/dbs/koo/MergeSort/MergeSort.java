@@ -3,14 +3,10 @@ package kr.ac.snu.dbs.koo.MergeSort;
 import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.*;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 
 public class MergeSort {
-    public static int PAGE_SIZE = 4096;
+    public static int PAGE_SIZE = 2;
     public static int BUFFER_SIZE = 4;
     
     // buffer init
@@ -35,15 +31,22 @@ public class MergeSort {
     private int beforeRun = 0;
     
     private String pathPrefix = "";
-    private String lastPath = null;
+    private String lastTableFileName = null;
 
     public static SqlTable orderTable(SqlTable original, Attributer orderList) throws Exception {
         if (orderList == null) return original;
 
         MergeSort ms = new MergeSort();
         String tablePath = "resources/" + original.tableName;
-        ms.executeOnPath(tablePath + ".txt", tablePath, orderList.attribute);
-        return SqlTable.constructTable(ms.lastPath, null);
+        String mergeSortDir = "resources/tmp/" + System.currentTimeMillis() + "/";
+
+        // TODO: if directory not exists
+        (new File("resources/tmp/")).mkdir();
+        (new File(mergeSortDir)).mkdir();
+
+        ms.executeOnPath(tablePath + ".txt", mergeSortDir + original.tableName, orderList.attribute);
+
+        return SqlTable.constructTableFromMergeSorted(original, ms.lastTableFileName);
     }
 
     public void executeOnPath(String path, String prefix, String field) throws Exception {
@@ -82,7 +85,7 @@ public class MergeSort {
 
                 // Column name 관련 처리
                 if (targetColIndex == -1) {
-                    SqlColumn column = SqlColumn.constructColumn(items, null);
+                    column = SqlColumn.constructColumn(items, null);
                     for (int i = 0; i < column.values.size(); i++) {
                         if (column.values.get(i).equals(targetFieldName)) {
                             targetColIndex = i;
@@ -133,8 +136,8 @@ public class MergeSort {
                 if (pagePointer[i] == 0) {
                     continue;
                 }
-                String currentPath = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun) + ".txt";
-                lastPath = currentPath;
+                lastTableFileName = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun);
+                String currentPath = lastTableFileName + ".txt";
 
                 FileWriter fw = new FileWriter(currentPath);
                 BufferedWriter bw = new BufferedWriter(fw);
@@ -144,21 +147,21 @@ public class MergeSort {
                     // 비교 대상
                     int minIndex = -1;
                     SqlRecord minValue = null;
-                    for (int j = 1; j < pagePointer[i]; j++) {
+                    for (int j = 0; j < pagePointer[i]; j++) {
                         SqlRecord target = buffer[i][j];
                         if (target == null) {
                             continue;
                         }
 
-                        if (minValue == null || SqlValue.compare(target.values.get(targetColIndex), minValue.values.get(targetColIndex)) == -1) {
+                        if (minValue == null || SqlValue.compare(target.values.get(targetColIndex), minValue.values.get(targetColIndex)) == 1) {
                             minValue = target;
-                            minIndex = i;
+                            minIndex = j;
                         }
                     }
 
                     // write to file
                     for (int j = 0; j < buffer[i][minIndex].values.size(); j++) {
-                        bw.write(buffer[i][minIndex].values.get(j) + " ");
+                        bw.write(buffer[i][minIndex].values.get(j).toString() + " ");
                     }
                     bw.write("\n");
 
@@ -202,9 +205,9 @@ public class MergeSort {
         FileReader[] fr = new FileReader[BUFFER_SIZE - 1];
         BufferedReader[] br = new BufferedReader[BUFFER_SIZE - 1];
         
-        String writePath = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun)  + ".txt";
-        lastPath = writePath;
-        
+        lastTableFileName = pathPrefix + "_" + Integer.toString(currentPass) + "_" + Integer.toString(currentRun);
+        String writePath = lastTableFileName + ".txt";
+
         FileWriter fw = new FileWriter(writePath, true);
         BufferedWriter bw = new BufferedWriter(fw);
         
@@ -235,7 +238,10 @@ public class MergeSort {
                         }
 
                         String[] items = line.split(" ");
-                        if (items.length != column.values.size()) break;
+                        if (items.length != column.values.size()) {
+                            j--;
+                            continue;
+                        }
                         buffer[i][pagePointer[i]++] = SqlRecord.constructRecord(column, items);
                     }
                 }
@@ -268,7 +274,7 @@ public class MergeSort {
                     continue;
                 }
 
-                if (minValue == null || SqlValue.compare(target.values.get(targetColIndex), minValue.values.get(targetColIndex)) == -1) {
+                if (minValue == null || SqlValue.compare(target.values.get(targetColIndex), minValue.values.get(targetColIndex)) == 1) {
                     minValue = target;
                     minIndex = i;
                 }
@@ -293,7 +299,7 @@ public class MergeSort {
                     SqlRecord sv = buffer[BUFFER_SIZE - 1][j];
 
                     for (int k = 0; k < sv.values.size(); k++) {
-                        bw.write(sv.values.get(k) + " ");
+                        bw.write(sv.values.get(k).toString() + " ");
                     }
 
                     bw.write("\n");
@@ -308,7 +314,7 @@ public class MergeSort {
             SqlRecord sv = buffer[BUFFER_SIZE - 1][j];
 
             for (int k = 0; k < sv.values.size(); k++) {
-                bw.write(sv.values.get(k) + " ");
+                bw.write(sv.values.get(k).toString() + " ");
             }
 
             bw.write("\n");
@@ -324,9 +330,4 @@ public class MergeSort {
 
         return scannedRun + calMin;
     }
-
-    public String getLastPath() {
-        return lastPath;
-    }
-
 }

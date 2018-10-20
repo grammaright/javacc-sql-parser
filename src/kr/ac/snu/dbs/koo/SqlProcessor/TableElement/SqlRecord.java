@@ -24,4 +24,17 @@ public class SqlRecord {
 
         return record;
     }
+
+    // TODO:
+    public static SqlRecord constructRecord(String[] items) {
+        SqlRecord record = new SqlRecord();
+        record.values = new ArrayList<>();
+
+        for (String item : items) {
+            SqlValue value = SqlValue.constructValue(item);
+            record.values.add(value);
+        }
+
+        return record;
+    }
 }

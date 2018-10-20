@@ -33,7 +33,7 @@ public class SqlColumn {
                 }
             }
 
-            interestingOrder.remove(temp[0]);
+            if (interestingOrder != null) interestingOrder.remove(temp[0]);
             column.values.add(temp[0]);
             column.columnIndices.add(i);
             String type = temp[1].split("\\)")[0];
@@ -46,7 +46,7 @@ public class SqlColumn {
             }
         }
 
-        if (!interestingOrder.isEmpty()) {
+        if (interestingOrder != null && !interestingOrder.isEmpty()) {
            throw new Exception("no column in table");
         }
 
