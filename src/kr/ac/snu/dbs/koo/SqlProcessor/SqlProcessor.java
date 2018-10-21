@@ -121,8 +121,11 @@ public class SqlProcessor {
         HashSet<String> interestingOrder = constructInterestingOrder();
 
         // TODO: 현재는 Table 1개만 고려
-        SqlTable table = SqlTable.constructTable(tables.get(0), interestingOrder);
+        SqlTable table = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);
+        table.writeTableToTmp();
+
         table = MergeSort.orderTable(table, orderList);         // order by
+
         table = processWhere(table, whereList);                 // where
         // TODO: 5. WHERE, ORDER BY가 같이 있는 경우 ORDER BY를 처리하고 WHERE을 처리할 것
 

@@ -37,19 +37,21 @@ public class MergeSort {
         if (orderList == null) return original;
 
         MergeSort ms = new MergeSort();
-        String tablePath = "resources/" + original.tableName;
+        String tablePath = original.tablePath;
         String mergeSortDir = "resources/tmp/" + System.currentTimeMillis() + "/";
 
         // TODO: if directory not exists
         (new File("resources/tmp/")).mkdir();
         (new File(mergeSortDir)).mkdir();
 
-        ms.executeOnPath(tablePath + ".txt", mergeSortDir + original.tableName, orderList.attribute);
+        ms.executeOnPath(tablePath, mergeSortDir + original.tableName, orderList.attribute);
 
-        return SqlTable.constructTableFromMergeSorted(original, ms.lastTableFileName);
+        //return SqlTable.constructTableFromMergeSorted(original, ms.lastTableFileName);
+        // TODO: path / name 정리
+        return SqlTable.constructTableFromMergeSorted(original.column, ms.lastTableFileName + ".txt");
     }
 
-    public void executeOnPath(String path, String prefix, String field) throws Exception {
+    private void executeOnPath(String path, String prefix, String field) throws Exception {
         pathPrefix = prefix;
         targetFieldName = field;
         

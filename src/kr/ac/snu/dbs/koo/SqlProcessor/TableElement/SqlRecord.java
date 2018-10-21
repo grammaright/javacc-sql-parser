@@ -6,6 +6,11 @@ public class SqlRecord {
     public ArrayList<SqlValue> values;
 
     public static SqlRecord constructRecord(SqlColumn column, String[] items) {
+        if (column == null) return constructRecordWithoutColumn(items);
+        return constructRecordWithColumn(column, items);
+    }
+
+    private static SqlRecord constructRecordWithColumn(SqlColumn column, String[] items) {
         SqlRecord record = new SqlRecord();
         record.values = new ArrayList<>();
 
@@ -26,7 +31,7 @@ public class SqlRecord {
     }
 
     // TODO:
-    public static SqlRecord constructRecord(String[] items) {
+    private static SqlRecord constructRecordWithoutColumn(String[] items) {
         SqlRecord record = new SqlRecord();
         record.values = new ArrayList<>();
 

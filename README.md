@@ -66,15 +66,27 @@ emp_no(integer) first_name(string) last_name(string) salary(integer) from_date(s
 499999 Sachin Tsukuda 77303 2001-11-29 9999-01-01
 ```
 
-`PAGE_SIZE=4096`, `BLOCK_SIZE=4`로 실험하였을 때, 약 147673 ms 소요됩니다.
+실험에 사용된 SQL문은 아래와 같습니다.
 ```sql
 SELECT E.emp_no, E.salary from E order by E.salary;
 ...
 Done 2844047 rows in 147673 ms
 ```
 
+### Results
+
+실험 결과는 단일 측정으로, 정확하지 않을 수 있습니다.
+
+- `PAGE_SIZE=2`, `BLOCK_SIZE=4`로 실험하였을 때, 약 1377388 ms 소요됩니다.
+- `PAGE_SIZE=4096`, `BLOCK_SIZE=4`로 실험하였을 때, 약 117220 ms 소요됩니다.
+- `PAGE_SIZE=4096`, `BLOCK_SIZE=64`로 실험하였을 때, 약 146022 ms 소요됩니다.
+
 
 ## Requirements 
 
 - java 1.8
 
+
+## TODO
+- [ ] `order by` 있을 경우, `constructTable() -> orderTable()` 말고, `orderTable()` 으로 한번에 처리하도록 수정
+- [ ] `Exception` 일괄 수정
