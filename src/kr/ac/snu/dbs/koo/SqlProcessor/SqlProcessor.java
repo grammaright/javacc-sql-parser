@@ -124,10 +124,11 @@ public class SqlProcessor {
         SqlTable table = SqlTable.constructTable(tables.get(0), interestingOrder);
         table = MergeSort.orderTable(table, orderList);         // order by
         table = processWhere(table, whereList);                 // where
+        // TODO: 5. WHERE, ORDER BY가 같이 있는 경우 ORDER BY를 처리하고 WHERE을 처리할 것
 
         printTables(table);
 
-        System.out.format("Done in %d ms\n", System.currentTimeMillis() - startTime);
+        System.out.format("Done %d rows in %d ms\n", table.records.size(), System.currentTimeMillis() - startTime);
     }
 
     // where

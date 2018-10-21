@@ -39,7 +39,7 @@ class NoTableFoundException extends Exception {
 TOKEN :		// input tokens
 {
   < STRING : (("\'" < WORD > "\'") | ("\"" < WORD > "\"")) >
-| < WORD : (< ALPHABET >)+ >
+| < WORD : (< ALPHABET >)+(< ALPHABET > | "_")* >
 | < ALPHABET : ([ "a"-"z" ] | ["A"-"Z"]) >
 | < INT_VALUE : (< DIGIT >)+ >
 | < DIGIT : [ "0"-"9" ] >}int one_line() :{}{  sql_clause() ";"  {    return 0;  }| ";"  {    return 1;  }}void sql_clause() :{
