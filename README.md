@@ -12,7 +12,6 @@
 
 Eclipse 혹은 Intellij에서 import 한 뒤 main()가 존재하는 `SqlGrammar.java` target으로 Run 시키면 됩니다. 동작 후 SQL문을 넣으면 실행 결과가 출력됩니다.
 
-
 ## 시간 측정하는법
 
 기본적으로 query 완료 후, SQL parsing(javacc 부분)을 제외한 모든 부분 (print문 포함)을 수행하는데 걸린 시간을 출력합니다.
@@ -32,6 +31,11 @@ Done 2844047 rows in 147673 ms
 ### B 사이즈 변경하는 법
 
 `kr.ac.snu.dbs.koo.MergeSort` 내의 `MergeSort` class 의 `PAGE_SIZE`, `BUFFER_SIZE`를 변경합니다.
+
+### 중간 결과를 확인하기 위해 (pass, run)을 표시하여 파일로 쓸 것
+
+SQL 중 중간 table 결과들이 `resources/tmp/` 에 저장됩니다.
+timestamp 명의 directory가 생성되고, 그 내부에 External Merge Sort의 결과가 `B_1_2.txt` (e.g. 1번째 pass 2번째 run)과 같은 형태로 저장됩니다.
 
 ## 진행 단계
 
@@ -79,7 +83,9 @@ Done 2844047 rows in 147673 ms
 
 - `PAGE_SIZE=2`, `BLOCK_SIZE=4`로 실험하였을 때, 약 1377388 ms 소요됩니다.
 - `PAGE_SIZE=4096`, `BLOCK_SIZE=4`로 실험하였을 때, 약 117220 ms 소요됩니다.
+- `PAGE_SIZE=4096`, `BLOCK_SIZE=32`로 실험하였을 때, 약 114264 ms 소요됩니다.
 - `PAGE_SIZE=4096`, `BLOCK_SIZE=64`로 실험하였을 때, 약 146022 ms 소요됩니다.
+- `PAGE_SIZE=4096`, `BLOCK_SIZE=256`로 실험하였을 때, 약 158320 ms 소요됩니다.
 
 
 ## Requirements 
@@ -88,5 +94,6 @@ Done 2844047 rows in 147673 ms
 
 
 ## TODO
+- [ ] Table명 대소문자 관련 issue (APFS 의 경우 대소문자 구분 안해서 생기는 문제일 수 있음)
 - [ ] `order by` 있을 경우, `constructTable() -> orderTable()` 말고, `orderTable()` 으로 한번에 처리하도록 수정
 - [ ] `Exception` 일괄 수정
