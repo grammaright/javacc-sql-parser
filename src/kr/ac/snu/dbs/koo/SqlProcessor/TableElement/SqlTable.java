@@ -1,11 +1,13 @@
 package kr.ac.snu.dbs.koo.SqlProcessor.TableElement;
 
+import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
 import kr.ac.snu.dbs.koo.SqlProcessor.SqlUtils;
 
 import java.io.*;
 import java.sql.SQLType;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 
 public class SqlTable {
     public String tableName;
@@ -14,7 +16,7 @@ public class SqlTable {
 
     public String tablePath;
 
-    private static SqlTable constructTable(String tablePath, HashSet<String> interestingOrder, boolean isColProcess) {
+    private static SqlTable constructTable(String tablePath, HashSet<Attributer> interestingOrder, boolean isColProcess) {
         SqlTable table = new SqlTable();
         table.column = (isColProcess) ? new SqlColumn() : null;
         table.records = new ArrayList<>();
@@ -24,6 +26,16 @@ public class SqlTable {
         // or regex
         String[] tableNameComp = tablePath.split("/");
         table.tableName = tableNameComp[tableNameComp.length - 1].split("\\.")[0];
+
+        HashSet<String> tableInterestingOrder = new HashSet<>();
+        Iterator interestingOrderIter = interestingOrder.iterator();
+        while (interestingOrderIter.hasNext()) {
+            Attributer item = (Attributer) interestingOrderIter.next();
+            boolean asterisk = (item.table == null) && (item.attribute.equals("*"));
+            if (table.tableName.equals(item.table) || asterisk) {
+                tableInterestingOrder.add(item.attribute);
+            }
+        }
 
         try {
             FileReader fr = new FileReader(tablePath);
@@ -37,7 +49,7 @@ public class SqlTable {
                 if (isColProcess) {
                     // Column name 관련 처리
                     isColProcess = false;
-                    table.column = SqlColumn.constructColumn(items, interestingOrder);
+                    table.column = SqlColumn.constructColumn(items, tableInterestingOrder);
                 } else {
                     if (table.column != null && items.length < table.column.values.size()) continue;
 
@@ -56,7 +68,7 @@ public class SqlTable {
         return table;
     }
 
-    public static SqlTable constructTable(String tablePath, HashSet<String> interestingOrder) {
+    public static SqlTable constructTable(String tablePath, HashSet<Attributer> interestingOrder) {
         return constructTable(tablePath, interestingOrder, true);
     }
 

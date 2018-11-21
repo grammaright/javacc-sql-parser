@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import kr.ac.snu.dbs.koo.JoinProcessor.JoinProcessor;
 import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
 import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
 import kr.ac.snu.dbs.koo.SqlGrammar.ParseException;
@@ -46,8 +47,8 @@ public class SqlProcessor {
     }
 
     public void raiseExceptions() throws ParseException {
-        // 3. join X
-        if (whereList != null && whereList.size() > 1) {
+        // 3. join 시에는 최대 2개까지만
+        if (tables != null && tables.size() > 2) {
             throw new ParseException();
         }
 
@@ -112,19 +113,29 @@ public class SqlProcessor {
 
     public void runQuery() throws Exception {
         if (DEBUGGING) debug();     // For debugging SQL Parsing
-
         long startTime = System.currentTimeMillis();
 
         raiseExceptions();
 
-        // TODO: Interesting orders: from 절의 table 도 고려해야 함.
-        HashSet<String> interestingOrder = constructInterestingOrder();
+        HashSet<Attributer> interestingOrder = constructInterestingOrder();
+        SqlTable table = null;
+        if (tables.size() > 1) {
+            // Join 수행해야 할 때에는, Table 2개 들어와야 함.
+            SqlTable table1 = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);
+            table1.writeTableToTmp();
 
-        // TODO: 현재는 Table 1개만 고려
-        SqlTable table = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);
-        table.writeTableToTmp();
+            SqlTable table2 = SqlTable.constructTable("resources/" + tables.get(1) + ".txt", interestingOrder);
+            table2.writeTableToTmp();
 
-        table = MergeSort.orderTable(table, orderList);         // order by
+            // join table
+            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.BLOCK_NESTED_JOIN);
+        } else {
+            // 그 외 (Table 1개일 때)
+            table = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);
+            table.writeTableToTmp();
+
+            table = MergeSort.orderTable(table, orderList);         // order by
+        }
 
         table = processWhere(table, whereList);                 // where
         // TODO: 5. WHERE, ORDER BY가 같이 있는 경우 ORDER BY를 처리하고 WHERE을 처리할 것
@@ -177,21 +188,21 @@ public class SqlProcessor {
         return table;
     }
 
-    private HashSet<String> constructInterestingOrder() {
-        HashSet<String> result = new HashSet<>();
+    private HashSet<Attributer> constructInterestingOrder() {
+        HashSet<Attributer> result = new HashSet<>();
         if (projection != null) {
             for (int i = 0; i < projection.size(); i++) {
-                result.add(projection.get(i).attribute);
+                result.add(projection.get(i));
             }
         }
 
         if (whereList != null) {
             for (int i = 0; i < whereList.size(); i++) {
-                result.add(whereList.get(i).lvalue.attribute);
+                result.add(whereList.get(i).lvalue);
             }
         }
 
-        if (orderList != null) result.add(orderList.attribute);
+        if (orderList != null) result.add(orderList);
 
         return result;
     }
