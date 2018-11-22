@@ -52,4 +52,12 @@ public class SqlColumn {
 
         return column;
     }
+
+    public static SqlColumn concat(SqlColumn input1, SqlColumn input2) {
+        input1.values.addAll(input2.values);
+        input1.types.addAll(input2.types);
+        input1.columnIndices.addAll(input2.columnIndices);
+
+        return input1;
+    }
 }

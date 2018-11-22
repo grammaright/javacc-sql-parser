@@ -10,7 +10,7 @@ public class HashJoin {
 
     }
 
-    public SqlTable join2Table(SqlTable table1, SqlTable table2, ArrayList<Formula> joinCondition) {
+    public SqlTable join2Table(SqlTable table1, SqlTable table2, Formula joinCondition) {
         return null;
     }
 }
