@@ -41,21 +41,19 @@ public class BlockNestedJoin {
             FileReader frOuter = new FileReader(outerTable.tablePath);
             BufferedReader brOuter = new BufferedReader(frOuter);
 
-            int outerTargetColumnIndex;
             String outerLine = brOuter.readLine();
             String[] outerItems = outerLine.split(" ");
             SqlColumn outerColumn = SqlColumn.constructColumn(outerItems, null);
-            outerTargetColumnIndex = matchTargetIndex(outerTable, joinCondition, outerColumn);
+            int outerTargetColumnIndex = matchTargetIndex(outerTable, joinCondition, outerColumn);
 
             // Inner 관련 변수 및 Column 처리
             FileReader frInner = new FileReader(innerTable.tablePath);
             BufferedReader brInner = new BufferedReader(frInner);
 
-            int innerTargetColumnIndex;
             String innerLine = brInner.readLine();
             String[] innerItems = innerLine.split(" ");
             SqlColumn innerColumn = SqlColumn.constructColumn(innerItems, null);
-            innerTargetColumnIndex = matchTargetIndex(outerTable, joinCondition, innerColumn);
+            int innerTargetColumnIndex = matchTargetIndex(outerTable, joinCondition, innerColumn);
 
             if (outerTargetColumnIndex == -1 || innerTargetColumnIndex == -1) {
                 // TODO: Error Condition

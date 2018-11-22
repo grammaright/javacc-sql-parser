@@ -2,11 +2,22 @@
 
 지식 및 데이터베이스 시스템 Project 입니다.
 
+
+# 넣어야 할 이야기들
+
+- 주요 알고리즘의 경우에만 Disk base 로 동작함. (????)
+- JoinProcessor 내의 통해서 동작됨 (어떤거로 할 지 선택함)
+- Block Nested Join 의 경우 Buffer page size 만 고려
+- Sort-Merge Join 의 경우, Merge-Sort phase 의 경우 Buffer 와 Page size 를 고려. 이후 join phase 시에는 메모리 상에서 동작
+- Hash Join 의 경우, Buffer page size 만 고려.
+
+
 ## 구성
 
 - `kr.ac.snu.dbs.koo.SqlGrammar` 는 javacc를 이용한 jj 파일 변환 결과입니다.
 - `kr.ac.snu.dbs.koo.SqlProcessor` 는 Database System 구현체입니다.
 - `kr.ac.snu.dbs.koo.MergeSort` 는 External Merge Sort 구현체입니다.
+- `kr.ac.snu.dbs.koo.JoinProcessor` 는 Join 구현체입니다.
 
 ## 프로그램 사용법
 

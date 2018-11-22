@@ -32,7 +32,6 @@ public class JoinProcessor {
             }
         }
 
-
         // 실행
         if (type.equals(JoinType.BLOCK_NESTED_JOIN)) {
             BlockNestedJoin join = new BlockNestedJoin();
