@@ -28,12 +28,14 @@ public class SqlTable {
         table.tableName = tableNameComp[tableNameComp.length - 1].split("\\.")[0];
 
         HashSet<String> tableInterestingOrder = new HashSet<>();
-        Iterator interestingOrderIter = interestingOrder.iterator();
-        while (interestingOrderIter.hasNext()) {
-            Attributer item = (Attributer) interestingOrderIter.next();
-            boolean asterisk = (item.table == null) && (item.attribute.equals("*"));
-            if (table.tableName.equals(item.table) || asterisk) {
-                tableInterestingOrder.add(item.attribute);
+        if (interestingOrder != null) {
+            Iterator interestingOrderIter = interestingOrder.iterator();
+            while (interestingOrderIter.hasNext()) {
+                Attributer item = (Attributer) interestingOrderIter.next();
+                boolean asterisk = (item.table == null) && (item.attribute.equals("*"));
+                if (table.tableName.equals(item.table) || asterisk) {
+                    tableInterestingOrder.add(item.attribute);
+                }
             }
         }
 

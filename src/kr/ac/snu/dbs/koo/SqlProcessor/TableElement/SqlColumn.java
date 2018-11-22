@@ -54,10 +54,22 @@ public class SqlColumn {
     }
 
     public static SqlColumn concat(SqlColumn input1, SqlColumn input2) {
-        input1.values.addAll(input2.values);
-        input1.types.addAll(input2.types);
-        input1.columnIndices.addAll(input2.columnIndices);
+        SqlColumn result = new SqlColumn();
+        result.values = new ArrayList<>();
+        result.columnIndices = new ArrayList<>();
+        result.types = new ArrayList<>();
 
-        return input1;
+        result.values.addAll(input1.values);
+        result.values.addAll(input2.values);
+        result.types.addAll(input1.types);
+        result.types.addAll(input2.types);
+
+        for (int i = 0; i < result.values.size(); i++) {
+            result.columnIndices.add(i);
+        }
+//        result.columnIndices.addAll(input1.columnIndices);
+//        result.columnIndices.addAll(input2.columnIndices);
+
+        return result;
     }
 }

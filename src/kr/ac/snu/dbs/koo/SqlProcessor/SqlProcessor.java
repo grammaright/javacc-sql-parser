@@ -18,7 +18,7 @@ import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlValueType;
 
 public class SqlProcessor {
 
-    public static boolean DEBUGGING = true;
+    public static boolean DEBUGGING = false;
 
     private ArrayList<Attributer> projection = null;
     private ArrayList<String> tables = null;
@@ -199,6 +199,11 @@ public class SqlProcessor {
         if (whereList != null) {
             for (int i = 0; i < whereList.size(); i++) {
                 result.add(whereList.get(i).lvalue);
+
+                // join 시에는 r-value 또한 table.attribute 형태가 올 수 있음.
+                if (whereList.get(i).rvalue.table != null) {
+                    result.add(whereList.get(i).rvalue);
+                }
             }
         }
 

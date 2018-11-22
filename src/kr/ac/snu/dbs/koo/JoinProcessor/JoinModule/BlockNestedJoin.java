@@ -5,6 +5,7 @@ import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlColumn;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlRecord;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlTable;
+import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlValue;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -40,21 +41,27 @@ public class BlockNestedJoin {
             FileReader frOuter = new FileReader(outerTable.tablePath);
             BufferedReader brOuter = new BufferedReader(frOuter);
 
-            int outerTargetColumnIndex = -1;
+            int outerTargetColumnIndex;
             String outerLine = brOuter.readLine();
             String[] outerItems = outerLine.split(" ");
             SqlColumn outerColumn = SqlColumn.constructColumn(outerItems, null);
             outerTargetColumnIndex = matchTargetIndex(outerTable, joinCondition, outerColumn);
 
-            // Outer 관련 변수 및 Column 처리
+            // Inner 관련 변수 및 Column 처리
             FileReader frInner = new FileReader(innerTable.tablePath);
             BufferedReader brInner = new BufferedReader(frInner);
 
-            int innerTargetColumnIndex = -1;
-            String innerLine = brOuter.readLine();
+            int innerTargetColumnIndex;
+            String innerLine = brInner.readLine();
             String[] innerItems = innerLine.split(" ");
             SqlColumn innerColumn = SqlColumn.constructColumn(innerItems, null);
             innerTargetColumnIndex = matchTargetIndex(outerTable, joinCondition, innerColumn);
+
+            if (outerTargetColumnIndex == -1 || innerTargetColumnIndex == -1) {
+                // TODO: Error Condition
+                throw new Exception("Error Condition: No attribute in table");
+//                return null;
+            }
 
             SqlColumn totalColumn = SqlColumn.concat(outerColumn, innerColumn);
 
@@ -79,18 +86,19 @@ public class BlockNestedJoin {
                         innerItems = innerLine.split(" ");
                         buffer[BUFFER_SIZE - 2] = SqlRecord.constructRecord(innerColumn, innerItems);
 
-                        String[] totalItems = new String[outerItems.length + innerItems.length];
+                        int outerSize = buffer[i].values.size();
+                        String[] totalItems = new String[outerSize + innerItems.length];
                         for (int j = 0; j < totalItems.length; j++) {
-                            if (j < outerItems.length) {
-                                totalItems[j] = outerItems[j];
+                            if (j < outerSize) {
+                                totalItems[j] = buffer[i].values.get(j).toString();
                             } else {
-                                totalItems[j] = innerItems[j - outerItems.length];
+                                totalItems[j] = innerItems[j - outerSize];
                             }
                         }
 
-                        if ((outerTargetColumnIndex == -1 || innerTargetColumnIndex == -1) ||
-                                (buffer[i].values.get(outerTargetColumnIndex) ==
-                                        buffer[BUFFER_SIZE - 2].values.get(innerTargetColumnIndex))) {
+                        // TODO: cross product, invalid condition 둘 다 고려해야 함.
+                        if ((joinCondition == null) ||
+                                (SqlValue.compare(buffer[i].values.get(outerTargetColumnIndex), buffer[BUFFER_SIZE - 2].values.get(innerTargetColumnIndex)) == 0)) {
                             // cross-product / equlity check 만 있다고 가정
                             buffer[BUFFER_SIZE - 1] = SqlRecord.constructRecord(totalColumn, totalItems);
 
@@ -131,13 +139,13 @@ public class BlockNestedJoin {
     }
 
     private int matchTargetIndex(SqlTable table, Formula condition, SqlColumn column) {
+        if (condition == null) return -1;
         for (int i = 0; i < column.values.size(); i++) {
             String columnItem = column.values.get(i);
-            if (condition != null &&
-                    (table.tableName.equals(condition.lvalue.table) &&
-                            columnItem.equals(condition.lvalue.attribute)) &&
-                    (table.tableName.equals(condition.rvalue.table) &&
-                            columnItem.equals(condition.rvalue.attribute))) {
+            if (((table.tableName.equals(condition.lvalue.table) &&
+                        columnItem.equals(condition.lvalue.attribute)) ||
+                (table.tableName.equals(condition.rvalue.table) &&
+                        columnItem.equals(condition.rvalue.attribute)))) {
                 // 해당 Table 에 해당 Column 이 존재할 때
                 // outer target column index에 넣어놓음
                 return i;
