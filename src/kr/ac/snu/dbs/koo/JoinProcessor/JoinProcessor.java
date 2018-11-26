@@ -41,7 +41,9 @@ public class JoinProcessor {
             return join.join2Table(table1, table2, joinCondition);
         } else if (type.equals(JoinType.HASH_JOIN)) {
             HashJoin join = new HashJoin();
-            return join.join2Table(table1, table2, joinCondition);
+            SqlTable result = join.join2Table(table1, table2, joinCondition);
+            join.clear();
+            return result;
         }
 
         //

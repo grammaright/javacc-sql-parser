@@ -5,11 +5,12 @@
 
 # 넣어야 할 이야기들
 
-- 주요 알고리즘의 경우에만 Disk base 로 동작함. (????)
 - JoinProcessor 내의 통해서 동작됨 (어떤거로 할 지 선택함)
 - Block Nested Join 의 경우 Buffer page size 만 고려
 - Sort-Merge Join 의 경우, Merge-Sort phase 의 경우 Buffer 와 Page size 를 고려. 이후 join phase 시에는 메모리 상에서 동작
 - Hash Join 의 경우, Buffer page size 만 고려.
+- self-join 고려?
+- SqlTable 에 SqlRecord 빼고, all disk-base 로? (주요 알고리즘의 경우에만 Disk base 로 동작함.???)
 
 
 ## 구성
