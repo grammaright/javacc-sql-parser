@@ -66,9 +66,9 @@ public class HashJoin {
             firstPartitionCount = endPartitionPaths.size();
             partitioningPhase(table2.tablePath, true, table2Index);
 
-            for (String endPartitionPath : endPartitionPaths) {
-                System.out.println(endPartitionPath);
-            }
+//            for (String endPartitionPath : endPartitionPaths) {
+//                System.out.println(endPartitionPath);
+//            }
 
             String tablePath = probingPhase(table1Index, table2Index, totalColumn);
             return SqlTable.constructTableFromMergeSorted(totalColumn, tablePath);

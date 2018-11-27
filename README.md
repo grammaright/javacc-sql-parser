@@ -3,23 +3,44 @@
 지식 및 데이터베이스 시스템 Project 입니다.
 
 
-# 넣어야 할 이야기들
-
-- JoinProcessor 내의 통해서 동작됨 (어떤거로 할 지 선택함)
-- Block Nested Join 의 경우 Buffer page size 만 고려
-- Sort-Merge Join 의 경우, Merge-Sort phase 의 경우 Buffer 와 Page size 를 고려. 이후 join phase 시에는 메모리 상에서 동작
-- Hash Join 의 경우, Buffer page size 만 고려.
-- self-join 고려?
-- SqlTable 에 SqlRecord 빼고, all disk-base 로? (주요 알고리즘의 경우에만 Disk base 로 동작함.???)
-
-
 ## 구성
 
-- `kr.ac.snu.dbs.koo.SqlGrammar` 는 javacc를 이용한 jj 파일 변환 결과입니다.
-- `kr.ac.snu.dbs.koo.SqlProcessor` 는 Database System 구현체입니다.
-- `kr.ac.snu.dbs.koo.MergeSort` 는 External Merge Sort 구현체입니다.
-- `kr.ac.snu.dbs.koo.JoinProcessor` 는 Join 구현체입니다.
-
+```
+.
+└── kr.ac.snu.dbs.koo
+    ├── JoinProcessor
+    │   ├── JoinModule
+    │   │   ├── BlockNestedJoin.java    # Block-Nested Join 구현체
+    │   │   ├── HashJoin.java           # Hash Join 구현체
+    │   │   └── SortMergeJoin.java      # Sort-Merge Join 구현체
+    │   └── JoinProcessor.java          # Join 총괄 
+    ├── MergeSort                       
+    │   └── MergeSort.java              # Merge Sort 구현체
+    ├── SqlGrammar                      # JavaCC 를 통한 SQL parser
+    │   ├── ParseException.java
+    │   ├── SimpleCharStream.java
+    │   ├── SqlGrammar.java
+    │   ├── SqlGrammar.jj
+    │   ├── SqlGrammarConstants.java
+    │   ├── SqlGrammarTokenManager.java
+    │   ├── Token.java
+    │   ├── TokenMgrError.java
+    │   └── Types                       # SQL 문의 구문 (where, from 절 등)을 위한 구현체
+    │       ├── Attributer.java
+    │       └── Formula.java
+    └── SqlProcessor                    
+        ├── SqlProcessor.java           # SQL process 구현체
+        ├── SqlUtils.java               # Utils
+        └── TableElement                # Table 표현을 위한 Class
+            ├── SqlColumn.java
+            ├── SqlRecord.java
+            ├── SqlTable.java
+            ├── SqlValue.java
+            ├── SqlValueInteger.java
+            ├── SqlValueString.java
+            └── SqlValueType.java
+```  
+    
 ## 프로그램 사용법
 
 Eclipse 혹은 Intellij에서 import 한 뒤 main()가 존재하는 `SqlGrammar.java` target으로 Run 시키면 됩니다. 동작 후 SQL문을 넣으면 실행 결과가 출력됩니다.
@@ -49,14 +70,30 @@ Done 2844047 rows in 147673 ms
 SQL 중 중간 table 결과들이 `resources/tmp/` 에 저장됩니다.
 timestamp 명의 directory가 생성되고, 그 내부에 External Merge Sort의 결과가 `B_1_2.txt` (e.g. 1번째 pass 2번째 run)과 같은 형태로 저장됩니다.
 
+
+## Join 에 관하여
+
+### B 사이즈 변경하는 법
+
+- Block-Nested Join의 경우 `kr.ac.snu.dbs.koo.JoinProcessor.JoinModule` 내의 `BlockNestedJoin` class 의 `PAGE_SIZE`, `BUFFER_SIZE`를 변경합니다.
+- Hash Join의 경우 `kr.ac.snu.dbs.koo.JoinProcessor.JoinModule` 내의 `HashJoin` class 의 `PAGE_SIZE`, `BUFFER_SIZE`를 변경합니다.
+- Sort-Merge Join의 경우 Merge-Sort 를 사용하기 때문에, `kr.ac.snu.dbs.koo.MergeSort` 내의 `MergeSort` class 의 `PAGE_SIZE`, `BUFFER_SIZE`를 변경합니다.
+
+
+### Join 방식 수정하는 법
+
+`SqlProcessor` class 내에서, `runQuery()` method 내의 join 관련 `JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.HASH_JOIN);` method 존재합니다.
+4번째 파라미터를 동작하고자 하는 Type 으로 변경하시면 됩니다. 
+
+
 ## 진행 단계
 
-Project 2 단계로 아래와 같이 수행됩니다. 
+Project 3 단계로 아래와 같이 수행됩니다. 
 
 ```
-1. 무조건 오름차순으로 출력
+1. Sorting 한다면 무조건 오름차순으로 출력
 2. 한 column에 대해서만 sorting한다고 가정
-3. sorting이 필요한 경우 from문을 통해 한 테이블만 가져온다고 가정 (즉, join을 고려하지 않음)
+3. Sorting을 하는 경우 from문을 통해 한 테이블만 가져온다고 가정 (즉, join과 sorting을 동시에 하지 않음)
 4. 값이 같은 경우 원래 저장된 테이블 순서대로 출력 
 5. WHERE, ORDER BY가 같이 있는 경우 ORDER BY를 처리하고 WHERE을 처리할 것
 ```
@@ -109,3 +146,7 @@ Done 2844047 rows in 147673 ms
 - [ ] Table명 대소문자 관련 issue (APFS 의 경우 대소문자 구분 안해서 생기는 문제일 수 있음)
 - [ ] `order by` 있을 경우, `constructTable() -> orderTable()` 말고, `orderTable()` 으로 한번에 처리하도록 수정
 - [ ] `Exception` 일괄 수정
+- [ ] Sort-Merge Join 의 경우 join phase 시에는 메모리 상에서 동작되는 점 개선
+- [ ] self-join 고려
+- [ ] SqlTable 에 SqlRecord를 전부 담제 말고, all disk-base 로? (현재는 주요 알고리즘의 경우에만 Disk base 로 동작함.)
+
