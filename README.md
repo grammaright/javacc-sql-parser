@@ -145,10 +145,10 @@ Done 2844047 rows in 147673 ms
 
 
 ## TODO
-- [ ] Table명 대소문자 관련 issue (APFS 의 경우 대소문자 구분 안해서 생기는 문제일 수 있음)
-- [ ] `order by` 있을 경우, `constructTable() -> orderTable()` 말고, `orderTable()` 으로 한번에 처리하도록 수정
-- [ ] `Exception` 일괄 수정
 - [ ] Sort-Merge Join 의 경우 join phase 시에는 메모리 상에서 동작되는 점 개선
 - [ ] self-join 고려
+- [ ] Table명 대소문자 관련 issue (APFS 의 경우 대소문자 구분 안해서 생기는 문제일 수 있음)
+- [ ] `order by` 있을 경우, `constructTable() -> orderTable()` 말고, `orderTable()` 으로 한번에 처리하도록 수정
 - [ ] SqlTable 에 SqlRecord를 전부 담제 말고, all disk-base 로? (현재는 주요 알고리즘의 경우에만 Disk base 로 동작함.)
+- [ ] `Exception` 일괄 수정
 
