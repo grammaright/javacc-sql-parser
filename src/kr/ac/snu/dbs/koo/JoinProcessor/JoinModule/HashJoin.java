@@ -7,6 +7,7 @@ import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlTable;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class HashJoin {
 
@@ -25,7 +26,7 @@ public class HashJoin {
     private int[] bufferPointer = null;
 
     // hash table for probing phase
-    private ArrayList<SqlRecord>[] hashTable = null;
+    private LinkedList<SqlRecord>[] hashTable = null;
 
     private int firstPartitionCount;
 
@@ -58,6 +59,8 @@ public class HashJoin {
         }
         if (table1Index == -1 || table2Index == -1) return null;
 
+        SqlColumn totalColumn = SqlColumn.concat(table1.column, table2.column);
+
         try {
             partitioningPhase(table1.tablePath, true, table1Index);
             firstPartitionCount = endPartitionPaths.size();
@@ -67,12 +70,13 @@ public class HashJoin {
                 System.out.println(endPartitionPath);
             }
 
-            probingPhase(table1Index, table2Index);
+            String tablePath = probingPhase(table1Index, table2Index, totalColumn);
+            return SqlTable.constructTableFromMergeSorted(totalColumn, tablePath);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return SqlTable.constructTableFromMergeSorted(totalColumn, tablePath);;
+        return null;
     }
 
     private void partitioningPhase(String inputFilePath, boolean isTable, int interestingIndex) throws Exception {
@@ -167,64 +171,173 @@ public class HashJoin {
         }
     }
 
-    private void probingPhase(int table1ColumnIndex, int table2ColumnIndex) throws Exception {
+    // buffer 0번째 index => input buffer, 1번째 index => output buffer (joined record)
+    private String probingPhase(int table1ColumnIndex, int table2ColumnIndex, SqlColumn totalColumn) throws Exception {
         // init for buffer
         buffer = new SqlRecord[BUFFER_SIZE][PAGE_SIZE];
         bufferPointer = new int[BUFFER_SIZE];
 
         // init for hashtable
-        hashTable = new ArrayList[BUFFER_SIZE - 2];
+        // Hash Table을 만들기 위함이지만, Memory Size 고려해야 하기 때문
+        int maxTableRecordSize = (BUFFER_SIZE - 2) * PAGE_SIZE;
+        int tableRecordCount = 0;
+        hashTable = new LinkedList[BUFFER_SIZE - 2];
         for (int i = 0; i < BUFFER_SIZE - 2; i++) {
-            hashTable[i] = new ArrayList<>();
+            hashTable[i] = new LinkedList<>();
         }
+
+        // Write
+        String tablePath = joinDir + "/hash-joined.txt";
+        FileWriter fw = new FileWriter(tablePath);
+        BufferedWriter bw = new BufferedWriter(fw);
 
         int table1Index = 0;
-        int table2Index = 0;
-        //        for (int i = 0; i < firstPartitionCount; i++) {
-        while (table1Index < firstPartitionCount) {
+        int table2Index = firstPartitionCount;
+        while (table1Index < firstPartitionCount && table2Index < endPartitionPaths.size()) {
             // hash table 생성
             // 못쓰는 buffer 공간을 이용하여 arrayList (linked list) 로 이루어진 hash table 생성
-            String path = endPartitionPaths.get(table1Index);
-            FileReader fr = new FileReader(path);
-            BufferedReader br = new BufferedReader(fr);
-            bufferPointer[2] = 0;
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                String[] lineItmes = line.split(" ");
-                buffer[2][bufferPointer[2]] = SqlRecord.constructRecord(null, lineItmes);
-                int hashResult = hashFunction2(buffer[2][bufferPointer[2]].values.get(table1ColumnIndex).toString());
-                hashTable[hashResult].add(buffer[2][bufferPointer[2]]);
+            String table1Path = endPartitionPaths.get(table1Index);
+            String table2Path = endPartitionPaths.get(table2Index);
+
+            int compareResult = comparePartition(table1Path, table2Path);
+            if (compareResult == 1) {
+                table2Index++;
+                continue;
+            }
+            else if (compareResult == 2) {
+                table1Index++;
+                continue;
             }
 
+            FileReader fr1 = new FileReader(table1Path);
+            BufferedReader br1 = new BufferedReader(fr1);
 
+            while (true) {
+                // init
+                bufferPointer[0] = 0;
+                tableRecordCount = 0;
 
+                // 최대한 hash table 만들기
+                String line = null;
+                while ((line = br1.readLine()) != null) {
+                    String[] lineItmes = line.split(" ");
+                    buffer[0][bufferPointer[0]] = SqlRecord.constructRecord(null, lineItmes);
+                    int hashResult = hashFunction2(buffer[0][bufferPointer[0]].values.get(table1ColumnIndex).toString());
+                    hashTable[hashResult].add(buffer[0][bufferPointer[0]]);
+                    if (++tableRecordCount >= maxTableRecordSize) break;
+                }
+
+                if (tableRecordCount == 0) break;
+
+                FileReader fr2 = new FileReader(table2Path);
+                BufferedReader br2 = new BufferedReader(fr2);
+
+                while (true) {
+                    bufferPointer[0] = 0;
+
+                    // 비교를 위한 input buffer 관련
+                    while ((line = br2.readLine()) != null) {
+                        String[] lineItmes = line.split(" ");
+                        buffer[0][bufferPointer[0]++] = SqlRecord.constructRecord(null, lineItmes);
+                        if (PAGE_SIZE == bufferPointer[0]) break;
+                    }
+
+                    if (bufferPointer[0] == 0) break;
+
+                    for (int i = 0; i < bufferPointer[0]; i++) {
+                        int hashResult = hashFunction2(buffer[0][i].values.get(table2ColumnIndex).toString());
+                        for (int j = 0; j < hashTable[hashResult].size(); j++) {
+                            int table1Size = hashTable[hashResult].get(j).values.size();
+                            int table2Size = buffer[0][i].values.size();
+                            String[] totalItems = new String[table1Size + table2Size];
+                            for (int k = 0; k < totalItems.length; k++) {
+                                // TODO: Type..?
+                                if (k < table1Size) {
+                                    totalItems[k] = hashTable[hashResult].get(j).values.get(k).toString();
+                                } else {
+                                    totalItems[k] = buffer[0][i].values.get(k - table1Size).toString();
+                                }
+                            }
+
+                            buffer[BUFFER_SIZE - 1][bufferPointer[BUFFER_SIZE - 1]++] = SqlRecord.constructRecord(totalColumn, totalItems);
+
+                            if (bufferPointer[BUFFER_SIZE - 1] == PAGE_SIZE) {
+                                // Output Buffer 꽉 찼을 경우
+                                for (int l = 0; l < PAGE_SIZE; l++) {
+                                    for (int k = 0; k < buffer[BUFFER_SIZE - 1][l].values.size(); k++) {
+                                        bw.write(buffer[BUFFER_SIZE - 1][l].values.get(k).toString() + " ");
+                                    }
+                                    bw.write("\n");
+                                }
+
+                                bufferPointer[BUFFER_SIZE - 1] = 0;
+                            }
+                        }
+                    }
+                }
+
+                br2.close();
+                fr2.close();
+            }
+
+            if (compareResult == 0) table2Index++;
+            else if (compareResult == 3) table1Index++;
+            else if (compareResult == 4) table2Index++;
+
+            br1.close();
+            fr1.close();
         }
+
+        bw.close();
+        fw.close();
+
+        return tablePath;
     }
 
     /*
         partition file 의 name 을 비교하는 method
 
         return
-        0: equal - 둘 다 같음
-        1: diff - inner (table2) 를 다음으로
-        2: short (table2가 짧음) - 동작 후 다음 file을 통해 hash table (table 1) 새로 construct
-        3: short (table1이 짧음) - 동작 후 다음 file을 통해 안쪽(table 2) 다음으로
+        equal - 둘 다 같음
+            0: equal
+        diff - inner (table2) 를 다음으로
+            1: input1 이 큼
+            2: input2 가 큼
+        short
+            3: input1이 김 - 동작 후 다음 file을 통해 hash table (table 1) 새로 construct
+            4: input2가 김 - 동작 후 다음 file을 통해 안쪽(table 2) 다음으로
      */
     private int comparePartition(String input1, String input2) {
         // TODO: 하드코딩
-        String[] token1 = input1.split("_");
-        String[] token2 = input2.split("_");
+        String[] token1 = input1.split("\\.")[0].split("_");
+        String[] token2 = input2.split("\\.")[0].split("_");
 
         if (token1.length < 3 || token2.length < 3) {
             return -1;
         }
 
         int index = 2;
-        while (true) {
-            if (index >= token1.length && index >= token2.length && token1.equals(token2)) return 0;
-            if (index >= token1.length) return 2;
-            else if (index >= token2.length) return 3;
-            if ()
+        while (index <= Math.max(token1.length, token2.length)) {
+            int token1Value = -1;
+            int token2Value = -1;
+            if (token1.length > index) {
+                token1Value = Integer.valueOf(token1[index]);
+            }
+            if (token2.length > index) {
+                token2Value = Integer.valueOf(token2[index]);
+            }
+
+            if (token1Value != -1 && token2Value != -1) {
+                if (token1Value > token2Value) return 1;
+                else if (token1Value < token2Value) return 2;
+                else return 0;
+            } else if (token1Value != -1) {
+                return 3;
+            } else if (token2Value != -1) {
+                return 4;
+            }
+
+            index++;
         }
 
         return -1;
