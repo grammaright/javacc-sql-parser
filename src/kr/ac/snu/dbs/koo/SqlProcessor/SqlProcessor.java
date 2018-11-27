@@ -128,7 +128,7 @@ public class SqlProcessor {
             table2.writeTableToTmp();
 
             // join table
-            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.HASH_JOIN);
+            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.SORT_MERGE_JOIN);
         } else {
             // 그 외 (Table 1개일 때)
             table = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);

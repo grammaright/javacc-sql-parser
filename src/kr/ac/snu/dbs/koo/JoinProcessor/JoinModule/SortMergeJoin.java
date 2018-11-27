@@ -52,8 +52,8 @@ public class SortMergeJoin {
                 throw new Exception("Error Condition: No attribute in table");
             }
 
-            FileReader trFr = new FileReader(table2.tablePath);
-            FileReader gsFr = new FileReader(table1.tablePath);
+            FileReader trFr = new FileReader(table1.tablePath);
+            FileReader gsFr = new FileReader(table2.tablePath);
             FileReader tsFr = null;
 
             BufferedReader trBr = new BufferedReader(trFr);
@@ -64,20 +64,20 @@ public class SortMergeJoin {
             int ts = 0;     // ranges over S
             int gs = 0;     // start of current S-partition
 
-            String trLine = null;
+            String trLine = readLineWithSkipBlank(trBr);
             String tsLine = null;
-            String gsLine = null;
-            while (((trLine = trBr.readLine()) != null) && ((gsLine = gsBr.readLine()) != null)) {
+            String gsLine = readLineWithSkipBlank(gsBr);
+            while (trLine != null && gsLine != null) {
                 SqlRecord tri = SqlRecord.constructRecord(null, trLine.split(" "));
                 SqlRecord gsj = SqlRecord.constructRecord(null, gsLine.split(" "));
                 while (SqlValue.compare(tri.values.get(target1ColumnIndex), gsj.values.get(target2ColumnIndex)) == 1) {
-                    if ((trLine = trBr.readLine()) == null) break;
+                    if ((trLine = readLineWithSkipBlank(trBr)) == null) break;
                     tri = SqlRecord.constructRecord(null, trLine.split(" "));
                     tr++;   // continue scan of R
                 }
 
                 while (SqlValue.compare(tri.values.get(target1ColumnIndex), gsj.values.get(target2ColumnIndex)) == -1) {
-                    if ((gsLine = gsBr.readLine()) == null) break;
+                    if ((gsLine = readLineWithSkipBlank(gsBr)) == null) break;
                     gsj = SqlRecord.constructRecord(null, gsLine.split(" "));
                     gs++;   // continue scan of S
                 }
@@ -85,11 +85,11 @@ public class SortMergeJoin {
                 ts = gs;                                            // Needed in case Tri != Gsj
                 while (SqlValue.compare(tri.values.get(target1ColumnIndex), gsj.values.get(target2ColumnIndex)) == 0) {           // process current R partition
                     ts = gs;                                        // reset S partition scan
-                    tsBr.close();
-                    tsFr.close();
-                    tsFr = new FileReader(table1.tablePath);
+                    if (tsBr != null) tsBr.close();
+                    if (tsFr != null) tsFr.close();
+                    tsFr = new FileReader(table2.tablePath);
                     tsBr = new BufferedReader(tsFr);
-                    for (int i = 0; i < ts; i++) tsLine = tsBr.readLine();
+                    for (int i = 0; i <= ts; i++) tsLine = readLineWithSkipBlank(tsBr);
                     SqlRecord tsj = SqlRecord.constructRecord(null, tsLine.split(" "));
 
                     while (SqlValue.compare(tsj.values.get(target2ColumnIndex), tri.values.get(target1ColumnIndex)) == 0) {       // process current R tuple
@@ -102,12 +102,12 @@ public class SortMergeJoin {
                         }
                         bw.write("\n");
 
-                        if ((tsLine = tsBr.readLine()) == null) break;
+                        if ((tsLine = readLineWithSkipBlank(tsBr)) == null) break;
                         ts++;
                         tsj = SqlRecord.constructRecord(null, tsLine.split(" "));
                     }
 
-                    if ((trLine = trBr.readLine()) == null) break;
+                    if ((trLine = readLineWithSkipBlank(trBr)) == null) break;
                     tr++;
                     tri = SqlRecord.constructRecord(null, trLine.split(" "));
                 }
@@ -115,17 +115,16 @@ public class SortMergeJoin {
 
                 gsBr.close();
                 gsFr.close();
-                gsFr = new FileReader(table1.tablePath);
+                gsFr = new FileReader(table2.tablePath);
                 gsBr = new BufferedReader(gsFr);
-                for (int i = 0; i < gs; i++) gsBr.readLine();
+                for (int i = 0; i <= gs; i++) gsLine = readLineWithSkipBlank(gsBr);
             }
 
             bw.close();
             fw.close();
 
-            SqlColumn totalColumn = SqlColumn.concat(table2.column, table1.column);
+            SqlColumn totalColumn = SqlColumn.concat(table1.column, table2.column);
             return SqlTable.constructTableFromMergeSorted(totalColumn, tablePath);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -149,5 +148,12 @@ public class SortMergeJoin {
             }
         }
         return -1;
+    }
+
+    private String readLineWithSkipBlank(BufferedReader br) throws IOException {
+        String result = br.readLine();
+        if (result == null) return null;
+        else if (result.equals("")) result = br.readLine();
+        return result;
     }
 }
