@@ -6,6 +6,8 @@ import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlRecord;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlTable;
 
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -62,9 +64,9 @@ public class HashJoin {
         SqlColumn totalColumn = SqlColumn.concat(table1.column, table2.column);
 
         try {
-            partitioningPhase(table1.tablePath, true, table1Index);
+            partitioningPhase(table1.tablePath, 0, table1Index);
             firstPartitionCount = endPartitionPaths.size();
-            partitioningPhase(table2.tablePath, true, table2Index);
+            partitioningPhase(table2.tablePath, 0, table2Index);
 
 //            for (String endPartitionPath : endPartitionPaths) {
 //                System.out.println(endPartitionPath);
@@ -79,12 +81,13 @@ public class HashJoin {
         return null;
     }
 
-    private void partitioningPhase(String inputFilePath, boolean isTable, int interestingIndex) throws Exception {
+    private void partitioningPhase(String inputFilePath, int recursiveCount, int interestingIndex) throws Exception {
         // init IO stuffs
         // buffered reader
         FileReader fr = new FileReader(inputFilePath);
         BufferedReader br = new BufferedReader(fr);
-        if (isTable) {
+        int inputRecordCount = 0;
+        if (recursiveCount == 0) {
             // Table 형태이기 때문에, column line 버림
             br.readLine();
         }
@@ -111,6 +114,7 @@ public class HashJoin {
             while ((line = br.readLine()) != null) {
                 String[] lineItmes = line.split(" ");
                 buffer[0][bufferPointer[0]++] = SqlRecord.constructRecord(null, lineItmes);
+                inputRecordCount++;
                 if (bufferPointer[0] == PAGE_SIZE) break;
             }
 
@@ -119,8 +123,11 @@ public class HashJoin {
                 break;
             }
 
-            for (int i = 0; i < PAGE_SIZE; i++) {
-                int hashResult = hashFunction(buffer[0][i].values.get(interestingIndex).toString());
+            for (int i = 0; i < bufferPointer[0]; i++) {
+                int hashResult;
+                // TODO: 여기서는 처음에만 hashFunction() 사용하고, 그 이후부터는 SHA-256 이용한 customHashFunction() 사용
+                if (recursiveCount == 0) hashResult = hashFunction(buffer[0][i].values.get(interestingIndex).toString());
+                else hashResult = customHashFunction(Integer.toString(recursiveCount), buffer[0][i].values.get(interestingIndex).toString());
                 if (hashResult + 1 >= BUFFER_SIZE) {
                     throw new Exception("Hash function must return 0...BUFFER_SIZE - 1 on partitioningPhase");
                 }
@@ -161,9 +168,11 @@ public class HashJoin {
             fw[i].close();
 
             String path = joinDir + "/" + savedFileName[i] + "_" + Integer.toString(i) + ".txt";
-            if (recordCount[i] > BUFFER_SIZE - 2) {
-                // Partition 다 안끝났을 때
-                partitioningPhase(path, false, interestingIndex);
+            if (recordCount[i] > BUFFER_SIZE - 2 && inputRecordCount != recordCount[i]) {
+                // same value for the join attributes OR hash function does note have randomness / uniformity 라면
+                // OR partition 다 안끝났을 때
+
+                partitioningPhase(path, recursiveCount + 1, interestingIndex);
             } else {
                 // 다 끝나면, Probing Phase 를 위해 path 저장
                 endPartitionPaths.add(path);
@@ -182,9 +191,6 @@ public class HashJoin {
         int maxTableRecordSize = (BUFFER_SIZE - 2) * PAGE_SIZE;
         int tableRecordCount = 0;
         hashTable = new LinkedList[BUFFER_SIZE - 2];
-        for (int i = 0; i < BUFFER_SIZE - 2; i++) {
-            hashTable[i] = new LinkedList<>();
-        }
 
         // Write
         String tablePath = joinDir + "/hash-joined.txt";
@@ -216,6 +222,10 @@ public class HashJoin {
                 // init
                 bufferPointer[0] = 0;
                 tableRecordCount = 0;
+
+                for (int i = 0; i < BUFFER_SIZE - 2; i++) {
+                    hashTable[i] = new LinkedList<>();
+                }
 
                 // 최대한 hash table 만들기
                 String line = null;
@@ -344,12 +354,25 @@ public class HashJoin {
     }
 
     private int hashFunction(String value) {
-        // TODO:
+        // TODO: type 에 대해서
         return Integer.valueOf(value) % (BUFFER_SIZE - 1);
     }
 
+    private int customHashFunction(String seed, String value) {
+        // TODO: type 에 대해서
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(seed.getBytes());
+            return (md.digest()[md.digest().length - 1] * Integer.valueOf(value)) % (BUFFER_SIZE - 1);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
     private int hashFunction2(String value) {
-        // TODO:
+        // TODO: type 에 대해서
         return Integer.valueOf(value) % (BUFFER_SIZE - 2);
     }
 

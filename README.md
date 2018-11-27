@@ -128,6 +128,8 @@ Done 2844047 rows in 147673 ms
 
 ### Results
 
+#### Sort
+
 실험 결과는 단일 측정으로, 정확하지 않을 수 있습니다.
 
 - `PAGE_SIZE=2`, `BLOCK_SIZE=4`로 실험하였을 때, 약 1377388 ms 소요됩니다.
