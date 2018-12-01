@@ -145,7 +145,6 @@ Done 2844047 rows in 147673 ms
 
 
 ## TODO
-- [ ] Sort-Merge Join 의 경우 join phase 시에는 메모리 상에서 동작되는 점 개선
 - [ ] self-join 고려
 - [ ] Table명 대소문자 관련 issue (APFS 의 경우 대소문자 구분 안해서 생기는 문제일 수 있음)
 - [ ] `order by` 있을 경우, `constructTable() -> orderTable()` 말고, `orderTable()` 으로 한번에 처리하도록 수정
