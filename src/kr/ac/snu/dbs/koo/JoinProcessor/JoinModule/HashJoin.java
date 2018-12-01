@@ -279,11 +279,20 @@ public class HashJoin {
                                     }
                                     bw.write("\n");
                                 }
-
                                 bufferPointer[BUFFER_SIZE - 1] = 0;
                             }
                         }
                     }
+
+                    // Output Buffer 나머지 부분
+                    for (int i = 0; i < bufferPointer[BUFFER_SIZE - 1]; i++) {
+                        for (int j = 0; j < buffer[BUFFER_SIZE - 1][i].values.size(); j++) {
+                            bw.write(buffer[BUFFER_SIZE - 1][i].values.get(j).toString() + " ");
+                        }
+                        bw.write("\n");
+                    }
+
+                    bufferPointer[BUFFER_SIZE - 1] = 0;
                 }
 
                 br2.close();
