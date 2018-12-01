@@ -153,7 +153,7 @@ public class BlockNestedJoin {
 
             // 남은 Output buffer 있을 경우
             // TODO: 검증 한번 더!!!!
-            for (int l = bufferPointer[BUFFER_SIZE - 1]; l < PAGE_SIZE; l++) {
+            for (int l = 0; l < bufferPointer[BUFFER_SIZE - 1]; l++) {
 //            for (int l = 0; l < bufferPointer[BUFFER_SIZE - 1]; l++) {
                 for (int k = 0; k < buffer[BUFFER_SIZE - 1][l].values.size(); k++) {
                     bw.write(buffer[BUFFER_SIZE - 1][l].values.get(k).toString() + " ");
