@@ -14,7 +14,7 @@ import java.util.LinkedList;
 public class HashJoin {
 
     public static int PAGE_SIZE = 2;
-    public static int BUFFER_SIZE = 8;
+    public static int BUFFER_SIZE = 4;
 
     // buffer for partition phase & probing phase
     // in partition phase

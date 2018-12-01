@@ -83,7 +83,22 @@ timestamp 명의 directory가 생성되고, 그 내부에 External Merge Sort의
 ### Join 방식 수정하는 법
 
 `SqlProcessor` class 내에서, `runQuery()` method 내의 join 관련 `JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.HASH_JOIN);` method 존재합니다.
-4번째 파라미터를 동작하고자 하는 Type 으로 변경하시면 됩니다. 
+4번째 파라미터를 동작하고자 하는 Type 으로 변경하시면 됩니다.
+
+
+### misc
+
+- project 3 requirement 에 의해 sid, rid 를 처리해야 하는데 제공된 example dataset의 경우 rid 가 있는 table이 존재하지 않습니다.
+  - 따라서, 
+  - (6. sid, rid가 primary key 이고 join은 primary key에 대해서만 처리함 (11월 23일 수정내용))
+- 기존 DBMS 에서, join condition 이 없을 경우 전부 cross-product 되어 출력됩니다.
+  - project 3 requirement 의 의해 S.sid = R.sid 인 경우만 처리하였습니다.
+  - 원래 cross-product 되는 방식으로 동작시키려면, `kr.ac.snu.dbs.koo.JoinProcessor` 내의 `JoinProcessor.java` 의 `PROJECT3_REQ`를 `false`로 바꿔주시면 됩니다.
+  - (6. sid, rid가 primary key 이고 join은 primary key에 대해서만 처리함 (11월 23일 수정내용))
+- hash join, sort-merge join 의 경우 key가 반드시 필요합니다. 
+  - project 3 requirement 에 의해, sid (integer) 만 처리하기 때문에, hash-join 의 경우, string에 해당하는 hash function은 구현하지 않았습니다. 
+  - (6. sid, rid가 primary key 이고 join은 primary key에 대해서만 처리함 (11월 23일 수정내용)) 
+- 구현상의 이유로, join 이 동작될 때에는 table name 에 String 만 들어가야 합니다. 
 
 
 ## 진행 단계
@@ -96,6 +111,7 @@ Project 3 단계로 아래와 같이 수행됩니다.
 3. Sorting을 하는 경우 from문을 통해 한 테이블만 가져온다고 가정 (즉, join과 sorting을 동시에 하지 않음)
 4. 값이 같은 경우 원래 저장된 테이블 순서대로 출력 
 5. WHERE, ORDER BY가 같이 있는 경우 ORDER BY를 처리하고 WHERE을 처리할 것
+6. sid, rid가 primary key 이고 join은 primary key에 대해서만 처리함 (11월 23일 수정내용)
 ```
 
 ## Experiments
@@ -121,7 +137,7 @@ emp_no(integer) first_name(string) last_name(string) salary(integer) from_date(s
 
 실험에 사용된 SQL문은 아래와 같습니다.
 ```sql
-SELECT E.emp_no, E.salary from E order by E.salary;
+SELECT ES.emp_no, ES.salary from ES order by ES.salary;
 ...
 Done 2844047 rows in 147673 ms
 ```
@@ -145,9 +161,9 @@ Done 2844047 rows in 147673 ms
 
 
 ## TODO
-- [ ] self-join 고려
 - [ ] Table명 대소문자 관련 issue (APFS 의 경우 대소문자 구분 안해서 생기는 문제일 수 있음)
 - [ ] `order by` 있을 경우, `constructTable() -> orderTable()` 말고, `orderTable()` 으로 한번에 처리하도록 수정
 - [ ] SqlTable 에 SqlRecord를 전부 담제 말고, all disk-base 로? (현재는 주요 알고리즘의 경우에만 Disk base 로 동작함.)
 - [ ] `Exception` 일괄 수정
+- [ ] self-join 고려
 
