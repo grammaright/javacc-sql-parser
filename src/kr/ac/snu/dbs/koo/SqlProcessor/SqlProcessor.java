@@ -133,7 +133,7 @@ public class SqlProcessor {
             table2.writeTableToTmp();
 
             // join table
-            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.BLOCK_NESTED_JOIN);
+            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.HASH_JOIN);
         } else {
             // 그 외 (Table 1개일 때)
             table = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);
@@ -158,7 +158,10 @@ public class SqlProcessor {
         for (int i = 0; i < whereList.size(); i++) {
             Formula item = whereList.get(i);
             if (item.operend.equals("=") || item.operend.equals("==")) {
-                int index = table.column.values.indexOf(item.lvalue.attribute);
+                int index = -1;
+                if (tables.size() >= 2) continue;       // join condition 은 굳이 더 따질 필요는..
+                else table.column.values.indexOf(item.lvalue.attribute);
+
                 for (int j = 0; j < table.records.size(); j++) {
                     SqlValue target1 = table.records.get(j).values.get(index);
                     SqlValue target2 = SqlValue.constructValue(item.rvalue.attribute);

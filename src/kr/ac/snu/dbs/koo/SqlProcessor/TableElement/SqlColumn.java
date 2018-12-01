@@ -67,8 +67,30 @@ public class SqlColumn {
         for (int i = 0; i < result.values.size(); i++) {
             result.columnIndices.add(i);
         }
-//        result.columnIndices.addAll(input1.columnIndices);
-//        result.columnIndices.addAll(input2.columnIndices);
+
+        return result;
+    }
+
+    public static SqlColumn concatTemp(SqlColumn input1, SqlColumn input2, String table1Name, String table2Name) {
+        SqlColumn result = new SqlColumn();
+        result.values = new ArrayList<>();
+        result.columnIndices = new ArrayList<>();
+        result.types = new ArrayList<>();
+
+        for (String value : input1.values) {
+            result.values.add(table1Name + "." + value);
+        }
+
+        for (String value : input2.values) {
+            result.values.add(table2Name + "." + value);
+        }
+
+        result.types.addAll(input1.types);
+        result.types.addAll(input2.types);
+
+        for (int i = 0; i < result.values.size(); i++) {
+            result.columnIndices.add(i);
+        }
 
         return result;
     }

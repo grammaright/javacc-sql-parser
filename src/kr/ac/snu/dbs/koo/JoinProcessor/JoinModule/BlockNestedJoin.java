@@ -171,6 +171,11 @@ public class BlockNestedJoin {
             bw.close();
             fw.close();
 
+            totalColumn = SqlColumn.concatTemp(outerColumn,
+                    innerColumn,
+                    outerTable.tableName.split("_")[0],
+                    innerTable.tableName.split("_")[0]);
+
             return SqlTable.constructTableFromMergeSorted(totalColumn, tablePath);
 
         } catch (Exception e) {

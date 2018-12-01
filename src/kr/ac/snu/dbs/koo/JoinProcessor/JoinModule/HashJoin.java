@@ -73,6 +73,11 @@ public class HashJoin {
 //            }
 
             String tablePath = probingPhase(table1Index, table2Index, totalColumn);
+
+            totalColumn = SqlColumn.concatTemp(table1.column,
+                    table2.column,
+                    table1.tableName.split("_")[0],
+                    table2.tableName.split("_")[0]);
             return SqlTable.constructTableFromMergeSorted(totalColumn, tablePath);
         } catch (Exception e) {
             e.printStackTrace();
