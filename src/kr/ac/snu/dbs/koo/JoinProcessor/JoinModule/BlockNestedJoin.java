@@ -100,7 +100,7 @@ public class BlockNestedJoin {
 
                         if (bufferPointer[BUFFER_SIZE - 2] == 0) break;
 
-                        for (int j = 0; j < PAGE_SIZE; j++) {
+                        for (int j = 0; j < bufferPointer[BUFFER_SIZE - 2]; j++) {
                             SqlRecord outerRecord = buffer[bufferIndex][pointerIndex];
                             SqlRecord innerRecord = buffer[BUFFER_SIZE - 2][j];
 
