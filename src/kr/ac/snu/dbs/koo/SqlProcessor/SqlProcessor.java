@@ -20,6 +20,11 @@ public class SqlProcessor {
 
     public static boolean DEBUGGING = false;
 
+    // Project 3 Requirement을 만족하게 위해 (6. sid, rid가 primary key 이고 join은 primary key에 대해서만 처리함)
+    // join condition이 없을 경우, 강제로 S.sid = R.sid 인 경우만 처리함. (제공 dataset 에는 rid 란 attribute 는 없기 때문)
+    // TODO: join condition 없이 cross-product 로 할 경우, 아래 PROJECT3_REQ = false 로 설정
+    public static boolean PROJECT3_REQ = true;
+
     private ArrayList<Attributer> projection = null;
     private ArrayList<String> tables = null;
     private ArrayList<Formula> whereList = null;
@@ -128,7 +133,7 @@ public class SqlProcessor {
             table2.writeTableToTmp();
 
             // join table
-            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.SORT_MERGE_JOIN);
+            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.BLOCK_NESTED_JOIN);
         } else {
             // 그 외 (Table 1개일 때)
             table = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);
@@ -206,6 +211,22 @@ public class SqlProcessor {
                 }
             }
         }
+
+        // Project 3 Requirement을 만족하게 위해 (6. sid, rid가 primary key 이고 join은 primary key에 대해서만 처리함)
+        // join condition이 없을 경우, 강제로 S.sid = R.sid 인 경우만 처리함. (제공 dataset 에는 rid 란 attribute 는 없기 때문)
+        // TODO: join condition 없이 cross-product 로 할 경우, 아래 code 구문 지운 뒤 실행
+        if (PROJECT3_REQ && tables.size() >= 2) {
+            Attributer a1 = new Attributer();
+            a1.table = "S";
+            a1.attribute = "sid";
+            result.add(a1);
+
+            Attributer a2 = new Attributer();
+            a2.table = "R";
+            a2.attribute = "sid";
+            result.add(a2);
+        }
+        // 여기까지
 
         if (orderList != null) result.add(orderList);
 

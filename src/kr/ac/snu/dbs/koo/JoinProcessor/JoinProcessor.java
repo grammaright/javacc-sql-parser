@@ -3,7 +3,9 @@ package kr.ac.snu.dbs.koo.JoinProcessor;
 import kr.ac.snu.dbs.koo.JoinProcessor.JoinModule.BlockNestedJoin;
 import kr.ac.snu.dbs.koo.JoinProcessor.JoinModule.HashJoin;
 import kr.ac.snu.dbs.koo.JoinProcessor.JoinModule.SortMergeJoin;
+import kr.ac.snu.dbs.koo.SqlGrammar.Types.Attributer;
 import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
+import kr.ac.snu.dbs.koo.SqlProcessor.SqlProcessor;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlTable;
 
 import java.util.ArrayList;
@@ -20,17 +22,38 @@ public class JoinProcessor {
         // TODO: 다른 join condition 도 있는지?
         // TODO: 현재 join condition 은 equality check 만 한다고 가정 (왜? 책이 그래서 ㅋㅋ)
         Formula joinCondition = null;
-        for (int i = 0; i < whereList.size(); i++) {
-            Formula item = whereList.get(i);
-            if (item.lvalue.table == null || item.rvalue.table == null) {
-                continue;
-            }
 
-            if (!item.lvalue.table.equals(item.rvalue.table)) {
-                joinCondition = item;
-                break;
+        // TODO: whereList null 이쁘게
+        if (whereList != null) {
+            for (int i = 0; i < whereList.size(); i++) {
+                Formula item = whereList.get(i);
+                if (item.lvalue.table == null || item.rvalue.table == null) {
+                    continue;
+                }
+
+                if (!item.lvalue.table.equals(item.rvalue.table)) {
+                    joinCondition = item;
+                    break;
+                }
             }
         }
+
+        if (SqlProcessor.PROJECT3_REQ && joinCondition == null) {
+            Formula item = new Formula();
+
+            item.lvalue = new Attributer();
+            item.lvalue.table = "S";
+            item.lvalue.attribute = "sid";
+
+            item.rvalue = new Attributer();
+            item.rvalue.table = "R";
+            item.rvalue.attribute = "sid";
+
+            item.operend = "=";
+
+            joinCondition = item;
+        }
+
 
         // 실행
         if (type.equals(JoinType.BLOCK_NESTED_JOIN)) {

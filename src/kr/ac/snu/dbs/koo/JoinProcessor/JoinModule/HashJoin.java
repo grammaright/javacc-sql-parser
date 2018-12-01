@@ -362,13 +362,14 @@ public class HashJoin {
         return -1;
     }
 
+    // 아래 3개의 hash function에 대해서
+    // TODO: Int String 말고, 정말 String 인 type 에 대해서 개선해야 함. (requirement: sid, rid 이기 때문에 생략)
+
     private int hashFunction(String value) {
-        // TODO: type 에 대해서
         return Integer.valueOf(value) % (BUFFER_SIZE - 1);
     }
 
     private int customHashFunction(String seed, String value) {
-        // TODO: type 에 대해서
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.update(seed.getBytes());
@@ -381,7 +382,6 @@ public class HashJoin {
     }
 
     private int hashFunction2(String value) {
-        // TODO: type 에 대해서
         return Integer.valueOf(value) % (BUFFER_SIZE - 2);
     }
 

@@ -57,9 +57,10 @@ public class BlockNestedJoin {
             SqlColumn innerColumn = SqlColumn.constructColumn(innerItems, null);
             int innerTargetColumnIndex = matchTargetIndex(outerTable, joinCondition, innerColumn);
 
-            if (outerTargetColumnIndex == -1 || innerTargetColumnIndex == -1) {
-                throw new Exception("Error Condition: No attribute in table");
-            }
+            // 만족 없으면 cross-product
+//            if (outerTargetColumnIndex == -1 || innerTargetColumnIndex == -1) {
+//                throw new Exception("Error Condition: No attribute in table");
+//            }
 
             SqlColumn totalColumn = SqlColumn.concat(outerColumn, innerColumn);
 
