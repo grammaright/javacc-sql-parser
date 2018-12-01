@@ -36,7 +36,7 @@ public class SortMergeJoin {
         // orderList 는 key 에 따라 달라짐
         try {
             // Write
-            String tablePath = joinDir + "/" + table1.tableName + "-" + table2.tableName + "-joined.txt";
+            String tablePath = joinDir + "/" + table1.tableName + "_" + table2.tableName + "_joined.txt";
             FileWriter fw = new FileWriter(tablePath);
             BufferedWriter bw = new BufferedWriter(fw);
 
@@ -71,15 +71,15 @@ public class SortMergeJoin {
                 SqlRecord tri = SqlRecord.constructRecord(null, trLine.split(" "));
                 SqlRecord gsj = SqlRecord.constructRecord(null, gsLine.split(" "));
                 while (SqlValue.compare(tri.values.get(target1ColumnIndex), gsj.values.get(target2ColumnIndex)) == 1) {
+                    tr++;   // continue scan of R
                     if ((trLine = readLineWithSkipBlank(trBr)) == null) break;
                     tri = SqlRecord.constructRecord(null, trLine.split(" "));
-                    tr++;   // continue scan of R
                 }
 
                 while (SqlValue.compare(tri.values.get(target1ColumnIndex), gsj.values.get(target2ColumnIndex)) == -1) {
+                    gs++;   // continue scan of S
                     if ((gsLine = readLineWithSkipBlank(gsBr)) == null) break;
                     gsj = SqlRecord.constructRecord(null, gsLine.split(" "));
-                    gs++;   // continue scan of S
                 }
 
                 ts = gs;                                            // Needed in case Tri != Gsj

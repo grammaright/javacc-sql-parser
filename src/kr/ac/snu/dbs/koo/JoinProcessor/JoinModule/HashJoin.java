@@ -4,6 +4,7 @@ import kr.ac.snu.dbs.koo.SqlGrammar.Types.Formula;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlColumn;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlRecord;
 import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlTable;
+import kr.ac.snu.dbs.koo.SqlProcessor.TableElement.SqlValue;
 
 import java.io.*;
 import java.security.MessageDigest;
@@ -262,6 +263,9 @@ public class HashJoin {
                     for (int i = 0; i < bufferPointer[0]; i++) {
                         int hashResult = hashFunction2(buffer[0][i].values.get(table2ColumnIndex).toString());
                         for (int j = 0; j < hashTable[hashResult].size(); j++) {
+                            if (SqlValue.compare(buffer[0][i].values.get(table2ColumnIndex), hashTable[hashResult].get(j).values.get(table1ColumnIndex)) != 0) {
+                                continue;
+                            }
                             int table1Size = hashTable[hashResult].get(j).values.size();
                             int table2Size = buffer[0][i].values.size();
                             String[] totalItems = new String[table1Size + table2Size];
@@ -288,17 +292,18 @@ public class HashJoin {
                             }
                         }
                     }
-
-                    // Output Buffer 나머지 부분
-                    for (int i = 0; i < bufferPointer[BUFFER_SIZE - 1]; i++) {
-                        for (int j = 0; j < buffer[BUFFER_SIZE - 1][i].values.size(); j++) {
-                            bw.write(buffer[BUFFER_SIZE - 1][i].values.get(j).toString() + " ");
-                        }
-                        bw.write("\n");
-                    }
-
-                    bufferPointer[BUFFER_SIZE - 1] = 0;
                 }
+
+
+                // Output Buffer 나머지 부분
+                for (int i = 0; i < bufferPointer[BUFFER_SIZE - 1]; i++) {
+                    for (int j = 0; j < buffer[BUFFER_SIZE - 1][i].values.size(); j++) {
+                        bw.write(buffer[BUFFER_SIZE - 1][i].values.get(j).toString() + " ");
+                    }
+                    bw.write("\n");
+                }
+
+                bufferPointer[BUFFER_SIZE - 1] = 0;
 
                 br2.close();
                 fr2.close();

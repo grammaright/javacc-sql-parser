@@ -35,7 +35,7 @@ public class BlockNestedJoin {
     public SqlTable join2Table(SqlTable outerTable, SqlTable innerTable, Formula joinCondition) {
         try {
             // Write
-            String tablePath = joinDir + "/" + outerTable.tableName + "-" + innerTable.tableName + "-joined.txt";
+            String tablePath = joinDir + "/" + outerTable.tableName + "_" + innerTable.tableName + "_joined.txt";
             FileWriter fw = new FileWriter(tablePath);
             BufferedWriter bw = new BufferedWriter(fw);
 

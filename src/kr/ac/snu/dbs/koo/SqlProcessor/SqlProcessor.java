@@ -133,7 +133,7 @@ public class SqlProcessor {
             table2.writeTableToTmp();
 
             // join table
-            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.BLOCK_NESTED_JOIN);
+            table = JoinProcessor.join2Table(table1, table2, whereList, JoinProcessor.JoinType.HASH_JOIN);
         } else {
             // 그 외 (Table 1개일 때)
             table = SqlTable.constructTable("resources/" + tables.get(0) + ".txt", interestingOrder);
@@ -171,7 +171,11 @@ public class SqlProcessor {
                     }
                 }
             } else if (item.operend.equals("<")) {
-                int index = table.column.values.indexOf(item.lvalue.attribute);
+                int index = -1;
+                String lvalue = item.lvalue.table + "." + item.lvalue.attribute;
+                if (tables.size() >= 2) index = table.column.values.indexOf(lvalue);
+                else index = table.column.values.indexOf(item.lvalue.attribute);
+
                 for (int j = 0; j < table.records.size(); j++) {
                     SqlValue target1 = table.records.get(j).values.get(index);
                     SqlValue target2 = SqlValue.constructValue(item.rvalue.attribute);
@@ -181,7 +185,11 @@ public class SqlProcessor {
                     }
                 }
             } else if (item.operend.equals(">")) {
-                int index = table.column.values.indexOf(item.lvalue.attribute);
+                int index = -1;
+                String lvalue = item.lvalue.table + "." + item.lvalue.attribute;
+                if (tables.size() >= 2) index = table.column.values.indexOf(lvalue);
+                else index = table.column.values.indexOf(item.lvalue.attribute);
+
                 for (int j = 0; j < table.records.size(); j++) {
                     SqlValue target1 = table.records.get(j).values.get(index);
                     SqlValue target2 = SqlValue.constructValue(item.rvalue.attribute);
@@ -243,10 +251,14 @@ public class SqlProcessor {
                     System.out.print(String.format("%10s\t", table.column.values.get(j)));
                 }
             } else {
-                int index = table.column.values.indexOf(projection.get(i).attribute);
+                int index = -1;
+                String target = projection.get(i).table + "." + projection.get(i).attribute;
+                if (tables.size() >= 2) index = table.column.values.indexOf(target);
+                else index = table.column.values.indexOf(projection.get(i).attribute);
                 if (index != -1) {
                     printIndexes.add(index);
-                    System.out.print(String.format("%10s\t", projection.get(i).attribute));
+                    if (tables.size() >= 2) System.out.print(String.format("%10s\t", target));
+                    else System.out.print(String.format("%10s\t", projection.get(i).attribute));
                 }
             }
         }
